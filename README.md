@@ -43,7 +43,7 @@ implement the [buildPage]((https://pub.dartlang.org/documentation/flutter_pagewi
  );
  ```
 
-Check the classes' [documentation](https://pub.dartlang.org/documentation/flutter_pagewise/latest/) for more details.
+Check the [documentation](https://pub.dartlang.org/documentation/flutter_pagewise/latest/) for more details.
 
 If you don't want to use [PagewiseGridView](https://pub.dartlang.org/documentation/flutter_pagewise/latest/flutter_pagewise/PagewiseGridView-class.html) or [PagewiseListView](https://pub.dartlang.org/documentation/flutter_pagewise/latest/flutter_pagewise/PagewiseListView-class.html), you can
 implement your own pagewise widget, by extending [Pagewise](https://pub.dartlang.org/documentation/flutter_pagewise/latest/flutter_pagewise/Pagewise-class.html) class and
