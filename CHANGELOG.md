@@ -4,3 +4,6 @@
 ## [0.1.1] - 29/07/2018.
 
 * Small fix to README.
+## [0.1.2] - 29/07/2018.
+
+* Add  gif to README.
