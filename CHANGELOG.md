@@ -1,3 +1,3 @@
-## [0.0.1] - TODO: Add release date.
+## [0.1.0] - 29/07/2018.
 
-* TODO: Describe initial release.
+* Provided basic functionality for Pagewise class, PagewiseGridView class and PagewiseListView class.
