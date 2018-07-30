@@ -1,4 +1,4 @@
-/// A library for widgets that load their content one page (or batch) at a time.
+/// A library for widgets that load their content one page (or batch) at a time (also known as lazy-loading).
 ///
 /// The library provides three widgets:
 ///  * [Pagewise]: An abstract widget that pagewise widgets must extend and
