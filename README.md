@@ -1,6 +1,6 @@
 # flutter_pagewise
 
-A library for widgets that load their content one page (or batch) at a time.
+A library for widgets that load their content one page (or batch) at a time (also known as lazy-loading).
 
 <img src="https://raw.githubusercontent.com/AbdulRahmanAlHamali/flutter_pagewise/master/flutter_pagewise.gif" height="500">
 
