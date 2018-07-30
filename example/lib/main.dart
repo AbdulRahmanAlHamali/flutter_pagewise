@@ -147,7 +147,9 @@ class BackendService {
         'price': rng.nextInt(100)
       };
     });
-    await Future.delayed(Duration(seconds: pageIndex == 1? 2: 2));
+    // The second page will take 3 seconds to load, while the rest of the pages will take 2
+    // This is useful to test cases where later pages might be fetched before earlier pages
+    await Future.delayed(Duration(seconds: pageIndex == 1? 3: 2));
     return list;
   }
 }
