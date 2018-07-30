@@ -83,14 +83,15 @@ typedef Widget LoadingBuilder(BuildContext context);
 ///  * [PagewiseGridView], a [Pagewise] implementation of [GridView](https://docs.flutter.io/flutter/widgets/GridView-class.html)
 ///  * [PagewiseListView], a [Pagewise] implementation of [ListView](https://docs.flutter.io/flutter/widgets/ListView-class.html)
 abstract class Pagewise extends StatelessWidget {
-
   /// A store for the pages of data that have already been fetched
   final _pages = <List>[];
 
   /// The number  of entries per page
   final int pageSize;
+
   /// The total number of entries.
   final int totalCount;
+
   /// Called whenever a new page (or batch) is to be fetched
   ///
   /// It is provided with the page index, and expected to return a [Future](https://api.dartlang.org/stable/1.24.3/dart-async/Future-class.html) that
@@ -99,18 +100,22 @@ abstract class Pagewise extends StatelessWidget {
   /// only [pageSize] or less entries (in the case of the last page) for each
   /// page.
   final PageFuture pageFuture;
+
   /// The amount of space by which to inset the children.
   final EdgeInsetsGeometry padding;
+
   /// Whether this is the primary scroll view associated with the parent
   /// [PrimaryScrollController](https://docs.flutter.io/flutter/widgets/PrimaryScrollController-class.html).
   ///
   /// Same as [ScrollView.primary](https://docs.flutter.io/flutter/widgets/ScrollView/primary.html)
   final bool primary;
+
   /// Whether the extent of the scroll view in the [scrollDirection](https://docs.flutter.io/flutter/widgets/ScrollView/scrollDirection.html) should be
   /// determined by the contents being viewed.
   ///
   /// Same as [ScrollView.shrinkWrap](https://docs.flutter.io/flutter/widgets/ScrollView/shrinkWrap.html)
   final bool shrinkWrap;
+
   /// Called when loading each page.
   ///
   /// It is expected to return a widget to display while the page is loading.
@@ -123,6 +128,7 @@ abstract class Pagewise extends StatelessWidget {
   ///
   /// If not specified, a [CircularProgressIndicator](https://docs.flutter.io/flutter/material/CircularProgressIndicator-class.html) will be shown
   final LoadingBuilder loadingBuilder;
+
   /// Called with an error object if an error occurs when loading the page
   ///
   /// It is expected to return a widget to display in place of the page that
@@ -139,16 +145,15 @@ abstract class Pagewise extends StatelessWidget {
   ///
   /// This is an abstract class, this constructor should only be called from
   /// constructors of widgets that extend this class
-  Pagewise({
-    this.pageSize = 10,
-    @required this.totalCount,
-    @required this.pageFuture,
-    this.padding,
-    this.primary,
-    this.shrinkWrap = false,
-    this.loadingBuilder,
-    this.errorBuilder
-  });
+  Pagewise(
+      {this.pageSize = 10,
+      @required this.totalCount,
+      @required this.pageFuture,
+      this.padding,
+      this.primary,
+      this.shrinkWrap = false,
+      this.loadingBuilder,
+      this.errorBuilder});
 
   @override
   Widget build(BuildContext context) {
@@ -168,9 +173,9 @@ abstract class Pagewise extends StatelessWidget {
                   return this._getLoadingWidget(context);
                 default:
                   if (snapshot.hasError) {
-                    return this.errorBuilder != null?
-                      this.errorBuilder(context, snapshot.error) :
-                      this._getStandardErrorWidget(snapshot.error);
+                    return this.errorBuilder != null
+                        ? this.errorBuilder(context, snapshot.error)
+                        : this._getStandardErrorWidget(snapshot.error);
                   } else {
                     return this.buildPage(context, this._pages[index]);
                   }
@@ -197,15 +202,16 @@ abstract class Pagewise extends StatelessWidget {
 
   Widget _getLoadingWidget(BuildContext context) {
     return SizedBox(
-      height: MediaQuery.of(context).size.height * 2, // to only load one page at a time
-      child: Padding(
-        padding: const EdgeInsets.only(top: 8.0),
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: this.loadingBuilder != null? this.loadingBuilder(context) : CircularProgressIndicator()
-        ),
-      )
-    );
+        height: MediaQuery.of(context).size.height *
+            2, // to only load one page at a time
+        child: Padding(
+          padding: const EdgeInsets.only(top: 8.0),
+          child: Align(
+              alignment: Alignment.topCenter,
+              child: this.loadingBuilder != null
+                  ? this.loadingBuilder(context)
+                  : CircularProgressIndicator()),
+        ));
   }
 
   Widget _getStandardErrorWidget(Object error) {
@@ -235,7 +241,6 @@ abstract class Pagewise extends StatelessWidget {
 ///
 /// Elements are displayed in a grid, but fetched one page (or batch) at a time
 class PagewiseGridView extends Pagewise {
-
   /// Called to build each entry in the view
   ///
   /// It is called for each of the entries fetched by [pageFuture] and provided
@@ -263,48 +268,51 @@ class PagewiseGridView extends Pagewise {
   /// }
   /// ```
   final ItemBuilder itemBuilder;
+
   /// The ratio of the cross-axis to the main-axis extent of each child.
   ///
   /// Same as [GridView.childAspectRatio](https://docs.flutter.io/flutter/rendering/SliverGridDelegateWithFixedCrossAxisCount/childAspectRatio.html)
   final double childAspectRatio;
+
   /// The number of logical pixels between each child along the main axis.
   ///
   /// Same as [GridView.mainAxisSpacing](https://docs.flutter.io/flutter/rendering/SliverGridDelegateWithFixedCrossAxisCount/mainAxisSpacing.html)
   final double mainAxisSpacing;
+
   /// The number of logical pixels between each child along the cross axis.
   ///
   /// Same as [GridView.crossAxisSpacing](https://docs.flutter.io/flutter/rendering/SliverGridDelegateWithFixedCrossAxisCount/crossAxisSpacing.html)
   final double crossAxisSpacing;
+
   /// The number of children in the cross axis.
   ///
   /// Same as [GridView.crossAxisCount](https://docs.flutter.io/flutter/rendering/SliverGridDelegateWithFixedCrossAxisCount/crossAxisCount.html)
   final int crossAxisCount;
 
   /// Creates a pagewise [GridView](https://docs.flutter.io/flutter/widgets/GridView-class.html)
-  PagewiseGridView({
-    pageSize = 10,
-    @required totalCount,
-    @required this.itemBuilder,
-    @required pageFuture,
-    @required this.crossAxisCount,
-    this.mainAxisSpacing = 0.0,
-    this.crossAxisSpacing = 0.0,
-    this.childAspectRatio = 1.0,
-    padding,
-    primary,
-    shrinkWrap = false,
-    loadingBuilder,
-    errorBuilder
-  }): super(
-    pageSize: pageSize,
-    totalCount: totalCount,
-    pageFuture: pageFuture,
-    padding: padding,
-    primary: primary,
-    shrinkWrap: shrinkWrap,
-    loadingBuilder: loadingBuilder,
-    errorBuilder: errorBuilder
-  );
+  PagewiseGridView(
+      {pageSize = 10,
+      @required totalCount,
+      @required this.itemBuilder,
+      @required pageFuture,
+      @required this.crossAxisCount,
+      this.mainAxisSpacing = 0.0,
+      this.crossAxisSpacing = 0.0,
+      this.childAspectRatio = 1.0,
+      padding,
+      primary,
+      shrinkWrap = false,
+      loadingBuilder,
+      errorBuilder})
+      : super(
+            pageSize: pageSize,
+            totalCount: totalCount,
+            pageFuture: pageFuture,
+            padding: padding,
+            primary: primary,
+            shrinkWrap: shrinkWrap,
+            loadingBuilder: loadingBuilder,
+            errorBuilder: errorBuilder);
 
   @override
   Widget buildPage(BuildContext context, List page) {
@@ -318,8 +326,7 @@ class PagewiseGridView extends Pagewise {
         crossAxisCount: this.crossAxisCount,
         children: page.map<Widget>((item) {
           return this.itemBuilder(context, item);
-        }).toList()
-    );
+        }).toList());
   }
 }
 
@@ -356,35 +363,33 @@ class PagewiseListView extends Pagewise {
   final ItemBuilder itemBuilder;
 
   /// Creates a pagewise [ListView](https://docs.flutter.io/flutter/widgets/ListView-class.html)
-  PagewiseListView({
-    pageSize = 10,
-    @required totalCount,
-    @required this.itemBuilder,
-    @required pageFuture,
-    padding,
-    primary,
-    shrinkWrap = false,
-    loadingBuilder,
-    errorBuilder
-  }): super(
-    pageSize: pageSize,
-    totalCount: totalCount,
-    pageFuture: pageFuture,
-    padding: padding,
-    primary: primary,
-    shrinkWrap: shrinkWrap,
-    loadingBuilder: loadingBuilder,
-    errorBuilder: errorBuilder
-  );
+  PagewiseListView(
+      {pageSize = 10,
+      @required totalCount,
+      @required this.itemBuilder,
+      @required pageFuture,
+      padding,
+      primary,
+      shrinkWrap = false,
+      loadingBuilder,
+      errorBuilder})
+      : super(
+            pageSize: pageSize,
+            totalCount: totalCount,
+            pageFuture: pageFuture,
+            padding: padding,
+            primary: primary,
+            shrinkWrap: shrinkWrap,
+            loadingBuilder: loadingBuilder,
+            errorBuilder: errorBuilder);
 
   @override
   Widget buildPage(BuildContext context, List page) {
     return ListView(
-      shrinkWrap: true,
-      primary: false,
-      children: page.map<Widget>((item) {
-        return this.itemBuilder(context, item);
-      }).toList()
-    );
+        shrinkWrap: true,
+        primary: false,
+        children: page.map<Widget>((item) {
+          return this.itemBuilder(context, item);
+        }).toList());
   }
 }
