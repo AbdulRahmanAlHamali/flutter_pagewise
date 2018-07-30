@@ -11,3 +11,7 @@
 ## [0.2.0] - 31/07/2018.
 
 * Replace loadingWidget with a loadingBuilder that accepts a [BuildContext](https://docs.flutter.io/flutter/widgets/BuildContext-class.html) and returns a widget.
+* Fix environment constraints in pubspec.yaml
+* Make the example better looking, and the demo as well
+* Mention lazy-loading in the README.
+* Reformat the code using *flutter format*
