@@ -66,6 +66,7 @@ import 'package:flutter/material.dart';
 typedef Widget ItemBuilder(BuildContext context, dynamic entry);
 typedef Future<List> PageFuture(int pageIndex);
 typedef Widget ErrorBuilder(BuildContext context, Object error);
+typedef Widget LoadingBuilder(BuildContext context);
 
 /// An abstract base class for widgets that fetch their content one page at a
 /// time.
@@ -110,10 +111,18 @@ abstract class Pagewise extends StatelessWidget {
   ///
   /// Same as [ScrollView.shrinkWrap](https://docs.flutter.io/flutter/widgets/ScrollView/shrinkWrap.html)
   final bool shrinkWrap;
-  /// The widget to show when a new page is being loaded.
+  /// Called when loading each page.
+  ///
+  /// It is expected to return a widget to display while the page is loading.
+  /// For example:
+  /// ```dart
+  /// (BuildContext context) {
+  ///   return Text('Loading...');
+  /// }
+  /// ```
   ///
   /// If not specified, a [CircularProgressIndicator](https://docs.flutter.io/flutter/material/CircularProgressIndicator-class.html) will be shown
-  final Widget loadingWidget;
+  final LoadingBuilder loadingBuilder;
   /// Called with an error object if an error occurs when loading the page
   ///
   /// It is expected to return a widget to display in place of the page that
@@ -137,7 +146,7 @@ abstract class Pagewise extends StatelessWidget {
     this.padding,
     this.primary,
     this.shrinkWrap = false,
-    this.loadingWidget,
+    this.loadingBuilder,
     this.errorBuilder
   });
 
@@ -193,7 +202,7 @@ abstract class Pagewise extends StatelessWidget {
         padding: const EdgeInsets.only(top: 8.0),
         child: Align(
           alignment: Alignment.topCenter,
-          child: this.loadingWidget ?? CircularProgressIndicator()
+          child: this.loadingBuilder != null? this.loadingBuilder(context) : CircularProgressIndicator()
         ),
       )
     );
@@ -284,7 +293,7 @@ class PagewiseGridView extends Pagewise {
     padding,
     primary,
     shrinkWrap = false,
-    loadingWidget,
+    loadingBuilder,
     errorBuilder
   }): super(
     pageSize: pageSize,
@@ -293,7 +302,7 @@ class PagewiseGridView extends Pagewise {
     padding: padding,
     primary: primary,
     shrinkWrap: shrinkWrap,
-    loadingWidget: loadingWidget,
+    loadingBuilder: loadingBuilder,
     errorBuilder: errorBuilder
   );
 
@@ -355,7 +364,7 @@ class PagewiseListView extends Pagewise {
     padding,
     primary,
     shrinkWrap = false,
-    loadingWidget,
+    loadingBuilder,
     errorBuilder
   }): super(
     pageSize: pageSize,
@@ -364,7 +373,7 @@ class PagewiseListView extends Pagewise {
     padding: padding,
     primary: primary,
     shrinkWrap: shrinkWrap,
-    loadingWidget: loadingWidget,
+    loadingBuilder: loadingBuilder,
     errorBuilder: errorBuilder
   );
 

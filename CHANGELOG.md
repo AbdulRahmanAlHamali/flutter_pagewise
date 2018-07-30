@@ -7,3 +7,7 @@
 ## [0.1.2] - 29/07/2018.
 
 * Add  gif to README.
+
+## [0.2.0] - 31/07/2018.
+
+* Replace loadingWidget with a loadingBuilder that accepts a [BuildContext](https://docs.flutter.io/flutter/widgets/BuildContext-class.html) and returns a widget.
