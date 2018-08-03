@@ -164,7 +164,7 @@ abstract class Pagewise extends StatelessWidget {
       shrinkWrap: this.shrinkWrap,
       itemBuilder: (BuildContext context, int index) {
         if (index >= this._pages.length) {
-          return FutureBuilder(
+          return _FutureBuilderWrapper(
             future: this._fetchPage(index),
             builder: (BuildContext context, AsyncSnapshot snapshot) {
               switch (snapshot.connectionState) {
@@ -236,6 +236,37 @@ abstract class Pagewise extends StatelessWidget {
     return page;
   }
 }
+
+/// This is a private class that I used to wrap [FutureBuilder](https://docs.flutter.io/flutter/widgets/FutureBuilder-class.html) with [AutomaticKeepAliveClientMixin](https://docs.flutter.io/flutter/widgets/AutomaticKeepAliveClientMixin-class.html)
+///
+/// This is needed to keep the fetched pages alive, and maintain their state.
+class _FutureBuilderWrapper<T> extends StatefulWidget {
+
+  Future<T> future;
+  final AsyncWidgetBuilder<T> builder;
+
+  _FutureBuilderWrapper({
+    this.future,
+    this.builder
+  });
+
+  @override
+  _FutureBuilderWrapperState<T> createState() => _FutureBuilderWrapperState<T>();
+}
+
+class _FutureBuilderWrapperState<T> extends State<_FutureBuilderWrapper> with AutomaticKeepAliveClientMixin {
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<T>(
+      future: widget.future,
+      builder: widget.builder,
+    );
+  }
+
+  @override
+  bool get wantKeepAlive => true;
+}
+
 
 /// A [GridView](https://docs.flutter.io/flutter/widgets/GridView-class.html) implementation of [Pagewise]
 ///
