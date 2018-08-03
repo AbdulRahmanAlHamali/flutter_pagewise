@@ -149,11 +149,12 @@ abstract class Pagewise extends StatelessWidget {
       {this.pageSize = 10,
       @required this.totalCount,
       @required this.pageFuture,
+      Key key,
       this.padding,
       this.primary,
       this.shrinkWrap = false,
       this.loadingBuilder,
-      this.errorBuilder});
+      this.errorBuilder}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -327,6 +328,7 @@ class PagewiseGridView extends Pagewise {
       @required this.itemBuilder,
       @required pageFuture,
       @required this.crossAxisCount,
+      Key key,
       this.mainAxisSpacing = 0.0,
       this.crossAxisSpacing = 0.0,
       this.childAspectRatio = 1.0,
@@ -336,6 +338,7 @@ class PagewiseGridView extends Pagewise {
       loadingBuilder,
       errorBuilder})
       : super(
+            key: key,
             pageSize: pageSize,
             totalCount: totalCount,
             pageFuture: pageFuture,
@@ -399,12 +402,14 @@ class PagewiseListView extends Pagewise {
       @required totalCount,
       @required this.itemBuilder,
       @required pageFuture,
+      Key key,
       padding,
       primary,
       shrinkWrap = false,
       loadingBuilder,
       errorBuilder})
       : super(
+            key: key,
             pageSize: pageSize,
             totalCount: totalCount,
             pageFuture: pageFuture,
