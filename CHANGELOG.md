@@ -15,3 +15,9 @@
 * Make the example better looking, and the demo as well
 * Mention lazy-loading in the README.
 * Reformat the code using *flutter format*
+
+## [0.3.0] - 04/08/2018.
+
+* Wrap the internally used [FutureBuilder](https://docs.flutter.io/flutter/widgets/FutureBuilder-class.html) by an [AutomaticKeepAliveClientMixin](https://docs.flutter.io/flutter/widgets/AutomaticKeepAliveClientMixin-class.html) to prevent from re-firing, causing unnecessary traffic, and scrolling issues in some scenarios
+* Provide a key parameter for all the widgets
+* Make the [ItemBuilder](https://pub.dartlang.org/documentation/flutter_pagewise/latest/flutter_pagewise/ItemBuilder.html) accept generic values
