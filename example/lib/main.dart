@@ -140,7 +140,7 @@ class BackendService {
   static Future<List> getPage(pageIndex) async {
     int size = 6;
     var rng = Random();
-    List list = List.generate(size, (index) {
+    List list = List.generate(pageIndex < 6 ? size : 5, (index) {
       int dataNumber = index + pageIndex * size;
       return {
         'name': 'product' + dataNumber.toString(),
