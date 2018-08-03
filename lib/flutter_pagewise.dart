@@ -63,7 +63,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-typedef Widget ItemBuilder(BuildContext context, dynamic entry);
+typedef Widget ItemBuilder<T>(BuildContext context, T entry);
 typedef Future<List> PageFuture(int pageIndex);
 typedef Widget ErrorBuilder(BuildContext context, Object error);
 typedef Widget LoadingBuilder(BuildContext context);
