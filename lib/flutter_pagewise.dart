@@ -243,7 +243,7 @@ abstract class Pagewise extends StatelessWidget {
 /// This is needed to keep the fetched pages alive, and maintain their state.
 class _FutureBuilderWrapper<T> extends StatefulWidget {
 
-  Future<T> future;
+  final Future<T> future;
   final AsyncWidgetBuilder<T> builder;
 
   _FutureBuilderWrapper({
