@@ -139,6 +139,12 @@ abstract class Pagewise extends StatelessWidget {
   /// If not specified, a [Text] containing the error will be displayed
   final ErrorBuilder errorBuilder;
 
+  /// An object that can be used to control the position to which this scroll
+  /// view is scrolled.
+  ///
+  /// Same as [ScrollView.controller](https://docs.flutter.io/flutter/widgets/ScrollView/controller.html)
+  final ScrollController controller;
+
   /// Creates a pagewise widget.
   ///
   /// This is an abstract class, this constructor should only be called from
@@ -150,6 +156,7 @@ abstract class Pagewise extends StatelessWidget {
       Key key,
       this.padding,
       this.primary,
+      this.controller,
       this.shrinkWrap = false,
       this.loadingBuilder,
       this.errorBuilder}) : super(key: key);
@@ -157,6 +164,7 @@ abstract class Pagewise extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
+      controller: this.controller,
       padding: this.padding,
       itemCount: (this.totalCount / this.pageSize).ceil(),
       primary: this.primary,
@@ -353,6 +361,7 @@ class PagewiseGridView extends Pagewise {
       this.crossAxisSpacing = 0.0,
       this.childAspectRatio = 1.0,
       padding,
+      controller,
       primary,
       shrinkWrap = false,
       loadingBuilder,
@@ -365,6 +374,7 @@ class PagewiseGridView extends Pagewise {
             totalCount: totalCount,
             pageFuture: pageFuture,
             padding: padding,
+            controller: controller,
             primary: primary,
             shrinkWrap: shrinkWrap,
             loadingBuilder: loadingBuilder,
@@ -475,6 +485,7 @@ class PagewiseListView extends Pagewise {
       Key key,
       padding,
       primary,
+      controller,
       shrinkWrap = false,
       loadingBuilder,
       errorBuilder})
@@ -486,6 +497,7 @@ class PagewiseListView extends Pagewise {
             totalCount: totalCount,
             pageFuture: pageFuture,
             padding: padding,
+            controller: controller,
             primary: primary,
             shrinkWrap: shrinkWrap,
             loadingBuilder: loadingBuilder,
