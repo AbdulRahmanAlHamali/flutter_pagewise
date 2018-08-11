@@ -83,9 +83,6 @@ typedef Widget LoadingBuilder(BuildContext context);
 ///  * [PagewiseGridView], a [Pagewise] implementation of [GridView](https://docs.flutter.io/flutter/widgets/GridView-class.html)
 ///  * [PagewiseListView], a [Pagewise] implementation of [ListView](https://docs.flutter.io/flutter/widgets/ListView-class.html)
 abstract class Pagewise extends StatelessWidget {
-  /// A store for the pages of data that have already been fetched
-  final _pages = <List>[];
-
   /// The number  of entries per page
   final int pageSize;
 
@@ -163,29 +160,25 @@ abstract class Pagewise extends StatelessWidget {
       itemCount: (this.totalCount / this.pageSize).ceil(),
       primary: this.primary,
       shrinkWrap: this.shrinkWrap,
-      itemBuilder: (BuildContext context, int index) {
-        if (index >= this._pages.length) {
-          return _FutureBuilderWrapper(
-            future: this._fetchPage(index),
-            builder: (BuildContext context, AsyncSnapshot snapshot) {
-              switch (snapshot.connectionState) {
-                case ConnectionState.none:
-                case ConnectionState.waiting:
-                  return this._getLoadingWidget(context);
-                default:
-                  if (snapshot.hasError) {
-                    return this.errorBuilder != null
-                        ? this.errorBuilder(context, snapshot.error)
-                        : this._getStandardErrorWidget(snapshot.error);
-                  } else {
-                    return this.buildPage(context, this._pages[index]);
-                  }
-              }
-            },
-          );
-        } else {
-          return this.buildPage(context, this._pages[index]);
-        }
+      itemBuilder: (BuildContext context, int pageNumber) {
+        return _FutureBuilderWrapper(
+          future: this.pageFuture(pageNumber),
+          builder: (BuildContext context, AsyncSnapshot snapshot) {
+            switch (snapshot.connectionState) {
+              case ConnectionState.none:
+              case ConnectionState.waiting:
+                return this._getLoadingWidget(context);
+              default:
+                if (snapshot.hasError) {
+                  return this.errorBuilder != null
+                      ? this.errorBuilder(context, snapshot.error)
+                      : this._getStandardErrorWidget(snapshot.error);
+                } else {
+                  return this.buildPage(context, snapshot.data);
+                }
+            }
+          },
+        );
       },
     );
   }
@@ -217,24 +210,6 @@ abstract class Pagewise extends StatelessWidget {
 
   Widget _getStandardErrorWidget(Object error) {
     return Text('Error: $error');
-  }
-
-  Future<List> _fetchPage(int pageIndex) async {
-    List page = await this.pageFuture(pageIndex);
-    // pages might be fetched out of order,
-    // so this is code is to make sure the right page is put in the right place
-    if (pageIndex == this._pages.length) {
-      this._pages.add(page);
-    } else if (pageIndex > this._pages.length) {
-      while (this._pages.length < pageIndex) {
-        this._pages.add([]);
-      }
-      this._pages.add(page);
-    } else {
-      this._pages[pageIndex] = page;
-    }
-
-    return page;
   }
 }
 
