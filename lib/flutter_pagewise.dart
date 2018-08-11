@@ -64,6 +64,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 typedef Widget ItemBuilder<T>(BuildContext context, T entry);
+typedef List<Widget> ItemListBuilder<T>(BuildContext context, T entry);
 typedef Future<List> PageFuture(int pageIndex);
 typedef Widget ErrorBuilder(BuildContext context, Object error);
 typedef Widget LoadingBuilder(BuildContext context);
@@ -248,7 +249,8 @@ class _FutureBuilderWrapperState<T> extends State<_FutureBuilderWrapper> with Au
 ///
 /// Elements are displayed in a grid, but fetched one page (or batch) at a time
 class PagewiseGridView extends Pagewise {
-  /// Called to build each entry in the view
+  /// Called to build each entry in the view when we want each entry to
+  /// correspond to a single widget.
   ///
   /// It is called for each of the entries fetched by [pageFuture] and provided
   /// with the [BuildContext](https://docs.flutter.io/flutter/widgets/BuildContext-class.html) and the entry. It is expected to return the widget
@@ -274,7 +276,49 @@ class PagewiseGridView extends Pagewise {
   ///   return Text(entry['name'] + ' - ' + entry['price']);
   /// }
   /// ```
+  /// The itemBuilder returns a single widget, if you want to return a list of
+  /// widgets. For example, a [ListTile](https://docs.flutter.io/flutter/material/ListTile-class.html)
+  /// followed by a [Divider](https://docs.flutter.io/flutter/material/Divider-class.html),
+  /// then use the [itemListBuilder] instead.
   final ItemBuilder itemBuilder;
+
+  /// Called to build each entry in the view when we want each entry to
+  /// correspond to a list of widgets.
+  ///
+  /// This is useful when, for example, we want to display a [ListTile](https://docs.flutter.io/flutter/material/ListTile-class.html)
+  /// followed by a [Divider](https://docs.flutter.io/flutter/material/Divider-class.html)
+  /// for each entry.
+  ///
+  /// It is called for each of the entries fetched by [pageFuture] and provided
+  /// with the [BuildContext](https://docs.flutter.io/flutter/widgets/BuildContext-class.html) and the entry. It is expected to return a list of widgets
+  /// that we want to display for each entry
+  ///
+  /// For example, the [pageFuture] might return a list that looks like:
+  /// ```dart
+  ///[
+  ///  {
+  ///    'name': 'product1',
+  ///    'price': 10
+  ///  },
+  ///  {
+  ///    'name': 'product2',
+  ///    'price': 15
+  ///  },
+  ///]
+  /// ```
+  /// Then itemListBuilder will be called twice, once for each entry. We can for
+  /// example do:
+  /// ```dart
+  /// (BuildContext context, dynamic entry) {
+  ///   return [
+  ///     Text(entry['name'] + ' - ' + entry['price']),
+  ///     Divider()
+  ///   ];
+  /// }
+  /// ```
+  /// The itemListBuilder returns a list of widgets, if you want to return a
+  /// single widget, then use the [itemBuilder] instead.
+  final ItemListBuilder itemListBuilder;
 
   /// The ratio of the cross-axis to the main-axis extent of each child.
   ///
@@ -300,7 +344,8 @@ class PagewiseGridView extends Pagewise {
   PagewiseGridView(
       {pageSize = 10,
       @required totalCount,
-      @required this.itemBuilder,
+      this.itemBuilder,
+      this.itemListBuilder,
       @required pageFuture,
       @required this.crossAxisCount,
       Key key,
@@ -312,7 +357,9 @@ class PagewiseGridView extends Pagewise {
       shrinkWrap = false,
       loadingBuilder,
       errorBuilder})
-      : super(
+      : assert(itemBuilder == null || itemListBuilder == null, "Cannot have both itemBuilder and itemListBuilder"),
+        assert(itemBuilder != null || itemListBuilder != null, "Either itemBuilder or itemListBuilder must be specified and not equal to null"),
+        super(
             key: key,
             pageSize: pageSize,
             totalCount: totalCount,
@@ -325,6 +372,11 @@ class PagewiseGridView extends Pagewise {
 
   @override
   Widget buildPage(BuildContext context, List page) {
+
+    List<Widget> children = this.itemBuilder != null?
+      page.map<Widget>((item) => this.itemBuilder(context, item)).toList() :
+      page.expand<Widget>((item) => this.itemListBuilder(context, item)).toList();
+
     return GridView.count(
         shrinkWrap: true,
         primary: false,
@@ -333,9 +385,8 @@ class PagewiseGridView extends Pagewise {
         mainAxisSpacing: this.mainAxisSpacing,
         crossAxisSpacing: this.crossAxisSpacing,
         crossAxisCount: this.crossAxisCount,
-        children: page.map<Widget>((item) {
-          return this.itemBuilder(context, item);
-        }).toList());
+        children: children
+    );
   }
 }
 
@@ -343,7 +394,8 @@ class PagewiseGridView extends Pagewise {
 ///
 /// Elements are displayed in a list, but fetched one page (or batch) at a time
 class PagewiseListView extends Pagewise {
-  /// Called to build each entry in the view
+  /// Called to build each entry in the view when we want each entry to
+  /// correspond to a single widget.
   ///
   /// It is called for each of the entries fetched by [pageFuture] and provided
   /// with the [BuildContext](https://docs.flutter.io/flutter/widgets/BuildContext-class.html) and the entry. It is expected to return the widget
@@ -369,13 +421,56 @@ class PagewiseListView extends Pagewise {
   ///   return Text(entry['name'] + ' - ' + entry['price']);
   /// }
   /// ```
+  /// The itemBuilder returns a single widget, if you want to return a list of
+  /// widgets. For example, a [ListTile](https://docs.flutter.io/flutter/material/ListTile-class.html)
+  /// followed by a [Divider](https://docs.flutter.io/flutter/material/Divider-class.html),
+  /// then use the [itemListBuilder] instead.
   final ItemBuilder itemBuilder;
+
+  /// Called to build each entry in the view when we want each entry to
+  /// correspond to a list of widgets.
+  ///
+  /// This is useful when, for example, we want to display a [ListTile](https://docs.flutter.io/flutter/material/ListTile-class.html)
+  /// followed by a [Divider](https://docs.flutter.io/flutter/material/Divider-class.html)
+  /// for each entry.
+  ///
+  /// It is called for each of the entries fetched by [pageFuture] and provided
+  /// with the [BuildContext](https://docs.flutter.io/flutter/widgets/BuildContext-class.html) and the entry. It is expected to return a list of widgets
+  /// that we want to display for each entry
+  ///
+  /// For example, the [pageFuture] might return a list that looks like:
+  /// ```dart
+  ///[
+  ///  {
+  ///    'name': 'product1',
+  ///    'price': 10
+  ///  },
+  ///  {
+  ///    'name': 'product2',
+  ///    'price': 15
+  ///  },
+  ///]
+  /// ```
+  /// Then itemListBuilder will be called twice, once for each entry. We can for
+  /// example do:
+  /// ```dart
+  /// (BuildContext context, dynamic entry) {
+  ///   return [
+  ///     Text(entry['name'] + ' - ' + entry['price']),
+  ///     Divider()
+  ///   ];
+  /// }
+  /// ```
+  /// The itemListBuilder returns a list of widgets, if you want to return a
+  /// single widget, then use the [itemBuilder] instead.
+  final ItemListBuilder itemListBuilder;
 
   /// Creates a pagewise [ListView](https://docs.flutter.io/flutter/widgets/ListView-class.html)
   PagewiseListView(
       {pageSize = 10,
       @required totalCount,
-      @required this.itemBuilder,
+      this.itemBuilder,
+      this.itemListBuilder,
       @required pageFuture,
       Key key,
       padding,
@@ -383,7 +478,9 @@ class PagewiseListView extends Pagewise {
       shrinkWrap = false,
       loadingBuilder,
       errorBuilder})
-      : super(
+      : assert(itemBuilder == null || itemListBuilder == null, "Cannot have both itemBuilder and itemListBuilder"),
+        assert(itemBuilder != null || itemListBuilder != null, "Either itemBuilder or itemListBuilder must be specified and not equal to null"),
+        super(
             key: key,
             pageSize: pageSize,
             totalCount: totalCount,
@@ -396,11 +493,15 @@ class PagewiseListView extends Pagewise {
 
   @override
   Widget buildPage(BuildContext context, List page) {
+
+    List<Widget> children = this.itemBuilder != null?
+      page.map<Widget>((item) => this.itemBuilder(context, item)).toList() :
+      page.expand<Widget>((item) => this.itemListBuilder(context, item)).toList();
+
     return ListView(
         shrinkWrap: true,
         primary: false,
-        children: page.map<Widget>((item) {
-          return this.itemBuilder(context, item);
-        }).toList());
+        children: children
+    );
   }
 }

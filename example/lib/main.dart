@@ -114,25 +114,23 @@ class PagewiseListViewExample extends StatelessWidget {
       pageSize: 6,
       totalCount: 40,
       padding: EdgeInsets.all(15.0),
-      itemBuilder: this._itemBuilder,
+      itemListBuilder: this._itemListBuilder,
       pageFuture: BackendService.getPage
     );
   }
 
-  Widget _itemBuilder(context, entry) {
-    return Column(
-      children: [
-        ListTile(
-          leading: Icon(
-            Icons.shopping_cart,
-            color: Colors.brown[200],
-          ),
-          title: Text(entry['name']),
-          subtitle: Text('\$' + entry['price'].toString()),
+  List<Widget> _itemListBuilder(context, entry) {
+    return [
+      ListTile(
+        leading: Icon(
+          Icons.shopping_cart,
+          color: Colors.brown[200],
         ),
-        Divider()
-      ]
-    );
+        title: Text(entry['name']),
+        subtitle: Text('\$' + entry['price'].toString()),
+      ),
+      Divider()
+    ];
   }
 }
 
