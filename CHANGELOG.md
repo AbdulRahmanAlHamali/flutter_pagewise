@@ -28,3 +28,7 @@
 * Remove unneeded _pages data structure and operations
 * Provide [ItemListBuilder](https://pub.dartlang.org/documentation/flutter_pagewise/latest/flutter_pagewise/ItemListBuilder.html) for cases where we want to build a list of widgets for each data entry
 * Provide [controller](https://pub.dartlang.org/documentation/flutter_pagewise/latest/flutter_pagewise/Pagewise/errorBuilder.html) property to allow custom [ScrollController](https://docs.flutter.io/flutter/widgets/ScrollController-class.html)
+
+## 0.4.1 - 17/08/2018
+
+* Decrease size of GIF in README to make it load faster

@@ -2,7 +2,7 @@
 
 A library for widgets that load their content one page (or batch) at a time (also known as lazy-loading).
 
-<img src="https://raw.githubusercontent.com/AbdulRahmanAlHamali/flutter_pagewise/master/flutter_pagewise.gif" height="500">
+<img src="https://raw.githubusercontent.com/AbdulRahmanAlHamali/flutter_pagewise/master/flutter_pagewise.gif">
 
 ## Installation
 See the [installation instructions on pub](https://pub.dartlang.org/packages/flutter_pagewise#-installing-tab-).
