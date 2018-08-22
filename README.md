@@ -4,6 +4,14 @@ A library for widgets that load their content one page (or batch) at a time (als
 
 <img src="https://raw.githubusercontent.com/AbdulRahmanAlHamali/flutter_pagewise/master/flutter_pagewise.gif">
 
+## Features
+
+* Load data one page at a time
+* Retry failed pages
+* Override the default loading, retry, and error widgets if desired
+* ListView and GridView implementations 
+* Extendability using inheritance
+
 ## Installation
 See the [installation instructions on pub](https://pub.dartlang.org/packages/flutter_pagewise#-installing-tab-).
 ## How to use

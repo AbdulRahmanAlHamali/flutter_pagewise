@@ -1,5 +1,12 @@
 /// A library for widgets that load their content one page (or batch) at a time (also known as lazy-loading).
 ///
+/// ## Features
+/// * Load data one page at a time
+/// * Retry failed pages
+/// * Override the default loading, retry, and error widgets if desired
+/// * ListView and GridView implementations
+/// * Extendability using inheritance
+///
 /// The library provides three widgets:
 ///  * [Pagewise]: An abstract widget that pagewise widgets must extend and
 /// implement the [Pagewise.buildPage] function

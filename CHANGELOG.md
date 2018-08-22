@@ -32,3 +32,8 @@
 ## 0.4.1 - 17/08/2018
 
 * Decrease size of GIF in README to make it load faster
+
+## 0.5.0 - 22/08/2018
+
+* Provide ability to retry
+* Fix case of page futures refiring when rebuilt
