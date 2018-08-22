@@ -202,10 +202,12 @@ abstract class Pagewise extends StatelessWidget {
       this.loadingBuilder,
       this.retryBuilder,
       this.showRetry,
-      this.errorBuilder}) :
-        assert(showRetry != null),
-        assert(showRetry == false || errorBuilder == null, 'Cannot specify showRetry and errorBuilder at the same time'),
-        assert(showRetry == true || retryBuilder == null, "Cannot specify retryBuilder when showRetry is set to false"),
+      this.errorBuilder})
+      : assert(showRetry != null),
+        assert(showRetry == false || errorBuilder == null,
+            'Cannot specify showRetry and errorBuilder at the same time'),
+        assert(showRetry == true || retryBuilder == null,
+            "Cannot specify retryBuilder when showRetry is set to false"),
         super(key: key);
 
   @override
@@ -242,13 +244,12 @@ abstract class Pagewise extends StatelessWidget {
   Widget buildPage(BuildContext context, List page);
 }
 
-
 typedef Widget _PageBuilder(BuildContext context, List page);
+
 /// This is a private class that represents a page, and wraps it with [AutomaticKeepAliveClientMixin](https://docs.flutter.io/flutter/widgets/AutomaticKeepAliveClientMixin-class.html)
 ///
 /// This is needed to keep the fetched pages alive, and maintain their state.
 class _Page extends StatefulWidget {
-
   final LoadingBuilder loadingBuilder;
   final ErrorBuilder errorBuilder;
   final _PageBuilder pageBuilder;
@@ -257,22 +258,20 @@ class _Page extends StatefulWidget {
   final PageFuture pageFuture;
   final int pageNumber;
 
-  _Page({
-    this.loadingBuilder,
-    this.errorBuilder,
-    this.pageBuilder,
-    this.showRetry,
-    this.retryBuilder,
-    this.pageFuture,
-    this.pageNumber
-  });
+  _Page(
+      {this.loadingBuilder,
+      this.errorBuilder,
+      this.pageBuilder,
+      this.showRetry,
+      this.retryBuilder,
+      this.pageFuture,
+      this.pageNumber});
 
   @override
   _PageState createState() => _PageState();
 }
 
 class _PageState<T> extends State<_Page> with AutomaticKeepAliveClientMixin {
-
   AsyncMemoizer _memoizer;
 
   @override
@@ -284,7 +283,8 @@ class _PageState<T> extends State<_Page> with AutomaticKeepAliveClientMixin {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-      future: this._memoizer.runOnce(() => widget.pageFuture(widget.pageNumber)),
+      future:
+          this._memoizer.runOnce(() => widget.pageFuture(widget.pageNumber)),
       builder: (BuildContext context, AsyncSnapshot snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.none:
@@ -325,7 +325,6 @@ class _PageState<T> extends State<_Page> with AutomaticKeepAliveClientMixin {
   }
 
   Widget _getRetryWidget(BuildContext context) {
-
     var defaultRetryButton = FlatButton(
       child: Icon(
         Icons.refresh,
@@ -339,10 +338,9 @@ class _PageState<T> extends State<_Page> with AutomaticKeepAliveClientMixin {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 24.0),
       child: Center(
-        child: widget.retryBuilder != null
-            ? widget.retryBuilder(context, this._retry)
-            : defaultRetryButton
-      ),
+          child: widget.retryBuilder != null
+              ? widget.retryBuilder(context, this._retry)
+              : defaultRetryButton),
     );
   }
 
@@ -356,7 +354,6 @@ class _PageState<T> extends State<_Page> with AutomaticKeepAliveClientMixin {
     return Text('Error: $error');
   }
 }
-
 
 /// A [GridView](https://docs.flutter.io/flutter/widgets/GridView-class.html) implementation of [Pagewise]
 ///
@@ -473,8 +470,10 @@ class PagewiseGridView extends Pagewise {
       showRetry = true,
       retryBuilder,
       errorBuilder})
-      : assert(itemBuilder == null || itemListBuilder == null, "Cannot have both itemBuilder and itemListBuilder"),
-        assert(itemBuilder != null || itemListBuilder != null, "Either itemBuilder or itemListBuilder must be specified and not equal to null"),
+      : assert(itemBuilder == null || itemListBuilder == null,
+            "Cannot have both itemBuilder and itemListBuilder"),
+        assert(itemBuilder != null || itemListBuilder != null,
+            "Either itemBuilder or itemListBuilder must be specified and not equal to null"),
         super(
             key: key,
             pageSize: pageSize,
@@ -491,10 +490,11 @@ class PagewiseGridView extends Pagewise {
 
   @override
   Widget buildPage(BuildContext context, List page) {
-
-    List<Widget> children = this.itemBuilder != null?
-      page.map<Widget>((item) => this.itemBuilder(context, item)).toList() :
-      page.expand<Widget>((item) => this.itemListBuilder(context, item)).toList();
+    List<Widget> children = this.itemBuilder != null
+        ? page.map<Widget>((item) => this.itemBuilder(context, item)).toList()
+        : page
+            .expand<Widget>((item) => this.itemListBuilder(context, item))
+            .toList();
 
     return GridView.count(
         shrinkWrap: true,
@@ -504,8 +504,7 @@ class PagewiseGridView extends Pagewise {
         mainAxisSpacing: this.mainAxisSpacing,
         crossAxisSpacing: this.crossAxisSpacing,
         crossAxisCount: this.crossAxisCount,
-        children: children
-    );
+        children: children);
   }
 }
 
@@ -600,8 +599,10 @@ class PagewiseListView extends Pagewise {
       showRetry = true,
       retryBuilder,
       errorBuilder})
-      : assert(itemBuilder == null || itemListBuilder == null, "Cannot have both itemBuilder and itemListBuilder"),
-        assert(itemBuilder != null || itemListBuilder != null, "Either itemBuilder or itemListBuilder must be specified and not equal to null"),
+      : assert(itemBuilder == null || itemListBuilder == null,
+            "Cannot have both itemBuilder and itemListBuilder"),
+        assert(itemBuilder != null || itemListBuilder != null,
+            "Either itemBuilder or itemListBuilder must be specified and not equal to null"),
         super(
             key: key,
             pageSize: pageSize,
@@ -618,15 +619,12 @@ class PagewiseListView extends Pagewise {
 
   @override
   Widget buildPage(BuildContext context, List page) {
+    List<Widget> children = this.itemBuilder != null
+        ? page.map<Widget>((item) => this.itemBuilder(context, item)).toList()
+        : page
+            .expand<Widget>((item) => this.itemListBuilder(context, item))
+            .toList();
 
-    List<Widget> children = this.itemBuilder != null?
-      page.map<Widget>((item) => this.itemBuilder(context, item)).toList() :
-      page.expand<Widget>((item) => this.itemListBuilder(context, item)).toList();
-
-    return ListView(
-        shrinkWrap: true,
-        primary: false,
-        children: children
-    );
+    return ListView(shrinkWrap: true, primary: false, children: children);
   }
 }
