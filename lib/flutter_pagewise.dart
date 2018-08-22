@@ -62,12 +62,15 @@ library flutter_pagewise;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:async/async.dart';
 
 typedef Widget ItemBuilder<T>(BuildContext context, T entry);
 typedef List<Widget> ItemListBuilder<T>(BuildContext context, T entry);
 typedef Future<List> PageFuture(int pageIndex);
 typedef Widget ErrorBuilder(BuildContext context, Object error);
 typedef Widget LoadingBuilder(BuildContext context);
+typedef Widget RetryBuilder(BuildContext context, RetryCallback retryCallback);
+typedef void RetryCallback();
 
 /// An abstract base class for widgets that fetch their content one page at a
 /// time.
@@ -145,6 +148,37 @@ abstract class Pagewise extends StatelessWidget {
   /// Same as [ScrollView.controller](https://docs.flutter.io/flutter/widgets/ScrollView/controller.html)
   final ScrollController controller;
 
+  /// Whether to show a retry button when page fails to load.
+  ///
+  /// If set to true, [retryBuilder] is called to show appropriate retry button.
+  ///
+  /// If set to false, [errorBuilder] is called instead to show appropriate
+  /// error.
+  final bool showRetry;
+
+  /// Called when a page fails to load and [showRetry] is set to true.
+  ///
+  /// It is expected to return a widget that gives the user the idea that retry
+  /// is possible. The builder is provided with a [RetryCallback] that must be
+  /// called for the retry to happen.
+  ///
+  /// For example:
+  /// ```dart
+  /// (context, retryCallback) {
+  ///   return FloatingActionButton(
+  ///     onPressed: retryCallback,
+  ///     backgroundColor: Colors.red,
+  ///     child: Icon(Icons.refresh),
+  ///   );
+  /// }
+  /// ```
+  ///
+  /// In the code above, when the button is pressed, retryCallback is called,
+  /// which will retry to fetch the page.
+  ///
+  /// If not specified, a simple retry button will be shown
+  final RetryBuilder retryBuilder;
+
   /// Creates a pagewise widget.
   ///
   /// This is an abstract class, this constructor should only be called from
@@ -159,7 +193,13 @@ abstract class Pagewise extends StatelessWidget {
       this.controller,
       this.shrinkWrap = false,
       this.loadingBuilder,
-      this.errorBuilder}) : super(key: key);
+      this.retryBuilder,
+      this.showRetry,
+      this.errorBuilder}) :
+        assert(showRetry != null),
+        assert(showRetry == false || errorBuilder == null, 'Cannot specify showRetry and errorBuilder at the same time'),
+        assert(showRetry == true || retryBuilder == null, "Cannot specify retryBuilder when showRetry is set to false"),
+        super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -170,23 +210,14 @@ abstract class Pagewise extends StatelessWidget {
       primary: this.primary,
       shrinkWrap: this.shrinkWrap,
       itemBuilder: (BuildContext context, int pageNumber) {
-        return _FutureBuilderWrapper(
-          future: this.pageFuture(pageNumber),
-          builder: (BuildContext context, AsyncSnapshot snapshot) {
-            switch (snapshot.connectionState) {
-              case ConnectionState.none:
-              case ConnectionState.waiting:
-                return this._getLoadingWidget(context);
-              default:
-                if (snapshot.hasError) {
-                  return this.errorBuilder != null
-                      ? this.errorBuilder(context, snapshot.error)
-                      : this._getStandardErrorWidget(snapshot.error);
-                } else {
-                  return this.buildPage(context, snapshot.data);
-                }
-            }
-          },
+        return _Page(
+          pageFuture: this.pageFuture,
+          pageNumber: pageNumber,
+          loadingBuilder: this.loadingBuilder,
+          errorBuilder: this.errorBuilder,
+          pageBuilder: this.buildPage,
+          showRetry: this.showRetry,
+          retryBuilder: this.retryBuilder,
         );
       },
     );
@@ -202,6 +233,75 @@ abstract class Pagewise extends StatelessWidget {
   ///  * [PagewiseGridView.buildPage]
   ///  * [PagewiseListView.buildPage]
   Widget buildPage(BuildContext context, List page);
+}
+
+
+typedef Widget _PageBuilder(BuildContext context, List page);
+/// This is a private class that represents a page, and wraps it with [AutomaticKeepAliveClientMixin](https://docs.flutter.io/flutter/widgets/AutomaticKeepAliveClientMixin-class.html)
+///
+/// This is needed to keep the fetched pages alive, and maintain their state.
+class _Page extends StatefulWidget {
+
+  final LoadingBuilder loadingBuilder;
+  final ErrorBuilder errorBuilder;
+  final _PageBuilder pageBuilder;
+  final bool showRetry;
+  final RetryBuilder retryBuilder;
+  final PageFuture pageFuture;
+  final int pageNumber;
+
+  _Page({
+    this.loadingBuilder,
+    this.errorBuilder,
+    this.pageBuilder,
+    this.showRetry,
+    this.retryBuilder,
+    this.pageFuture,
+    this.pageNumber
+  });
+
+  @override
+  _PageState createState() => _PageState();
+}
+
+class _PageState<T> extends State<_Page> with AutomaticKeepAliveClientMixin {
+
+  AsyncMemoizer _memoizer;
+
+  @override
+  void initState() {
+    super.initState();
+    this._memoizer = new AsyncMemoizer();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: this._memoizer.runOnce(() => widget.pageFuture(widget.pageNumber)),
+      builder: (BuildContext context, AsyncSnapshot snapshot) {
+        switch (snapshot.connectionState) {
+          case ConnectionState.none:
+          case ConnectionState.waiting:
+            return this._getLoadingWidget(context);
+          default:
+            if (snapshot.hasError) {
+              if (widget.showRetry == false) {
+                return widget.errorBuilder != null
+                    ? widget.errorBuilder(context, snapshot.error)
+                    : this._getStandardErrorWidget(snapshot.error);
+              } else {
+                return this._getRetryWidget(context);
+              }
+            } else {
+              return widget.pageBuilder(context, snapshot.data);
+            }
+        }
+      },
+    );
+  }
+
+  @override
+  bool get wantKeepAlive => true;
 
   Widget _getLoadingWidget(BuildContext context) {
     return SizedBox(
@@ -211,45 +311,43 @@ abstract class Pagewise extends StatelessWidget {
           padding: const EdgeInsets.only(top: 8.0),
           child: Align(
               alignment: Alignment.topCenter,
-              child: this.loadingBuilder != null
-                  ? this.loadingBuilder(context)
+              child: widget.loadingBuilder != null
+                  ? widget.loadingBuilder(context)
                   : CircularProgressIndicator()),
         ));
+  }
+
+  Widget _getRetryWidget(BuildContext context) {
+
+    var defaultRetryButton = FlatButton(
+      child: Icon(
+        Icons.refresh,
+        color: Colors.white,
+      ),
+      color: Colors.grey[300],
+      shape: CircleBorder(),
+      onPressed: this._retry,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24.0),
+      child: Center(
+        child: widget.retryBuilder != null
+            ? widget.retryBuilder(context, this._retry)
+            : defaultRetryButton
+      ),
+    );
+  }
+
+  void _retry() {
+    setState(() {
+      this._memoizer = AsyncMemoizer();
+    });
   }
 
   Widget _getStandardErrorWidget(Object error) {
     return Text('Error: $error');
   }
-}
-
-/// This is a private class that I used to wrap [FutureBuilder](https://docs.flutter.io/flutter/widgets/FutureBuilder-class.html) with [AutomaticKeepAliveClientMixin](https://docs.flutter.io/flutter/widgets/AutomaticKeepAliveClientMixin-class.html)
-///
-/// This is needed to keep the fetched pages alive, and maintain their state.
-class _FutureBuilderWrapper<T> extends StatefulWidget {
-
-  final Future<T> future;
-  final AsyncWidgetBuilder<T> builder;
-
-  _FutureBuilderWrapper({
-    this.future,
-    this.builder
-  });
-
-  @override
-  _FutureBuilderWrapperState<T> createState() => _FutureBuilderWrapperState<T>();
-}
-
-class _FutureBuilderWrapperState<T> extends State<_FutureBuilderWrapper> with AutomaticKeepAliveClientMixin {
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<T>(
-      future: widget.future,
-      builder: widget.builder,
-    );
-  }
-
-  @override
-  bool get wantKeepAlive => true;
 }
 
 
@@ -365,6 +463,8 @@ class PagewiseGridView extends Pagewise {
       primary,
       shrinkWrap = false,
       loadingBuilder,
+      showRetry = true,
+      retryBuilder,
       errorBuilder})
       : assert(itemBuilder == null || itemListBuilder == null, "Cannot have both itemBuilder and itemListBuilder"),
         assert(itemBuilder != null || itemListBuilder != null, "Either itemBuilder or itemListBuilder must be specified and not equal to null"),
@@ -378,6 +478,8 @@ class PagewiseGridView extends Pagewise {
             primary: primary,
             shrinkWrap: shrinkWrap,
             loadingBuilder: loadingBuilder,
+            showRetry: showRetry,
+            retryBuilder: retryBuilder,
             errorBuilder: errorBuilder);
 
   @override
@@ -488,6 +590,8 @@ class PagewiseListView extends Pagewise {
       controller,
       shrinkWrap = false,
       loadingBuilder,
+      showRetry = true,
+      retryBuilder,
       errorBuilder})
       : assert(itemBuilder == null || itemListBuilder == null, "Cannot have both itemBuilder and itemListBuilder"),
         assert(itemBuilder != null || itemListBuilder != null, "Either itemBuilder or itemListBuilder must be specified and not equal to null"),
@@ -501,6 +605,8 @@ class PagewiseListView extends Pagewise {
             primary: primary,
             shrinkWrap: shrinkWrap,
             loadingBuilder: loadingBuilder,
+            showRetry: showRetry,
+            retryBuilder: retryBuilder,
             errorBuilder: errorBuilder);
 
   @override
