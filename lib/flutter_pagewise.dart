@@ -625,6 +625,6 @@ class PagewiseListView extends Pagewise {
             .expand<Widget>((item) => this.itemListBuilder(context, item))
             .toList();
 
-    return ListView(shrinkWrap: true, primary: false, children: children);
+    return ListView(shrinkWrap: true, primary: false, children: children, padding: EdgeInsets.zero);
   }
 }
