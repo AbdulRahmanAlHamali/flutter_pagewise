@@ -20,25 +20,17 @@ class MyHomePage extends StatelessWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        appBar: AppBar(
-          bottom: TabBar(
-            tabs: [
+          appBar: AppBar(
+            bottom: TabBar(tabs: [
               Tab(
                 text: 'PagewiseListView',
               ),
-              Tab(
-                text: 'PagewiseGridView'
-              )
-            ]
+              Tab(text: 'PagewiseGridView')
+            ]),
           ),
-        ),
-        body: TabBarView(
-          children: [
-            PagewiseListViewExample(),
-            PagewiseGridViewExample()
-          ],
-        )
-      ),
+          body: TabBarView(
+            children: [PagewiseListViewExample(), PagewiseGridViewExample()],
+          )),
     );
   }
 }
@@ -60,48 +52,36 @@ class PagewiseGridViewExample extends StatelessWidget {
 
   Widget _itemBuilder(context, entry, _) {
     return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[600]),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                image: DecorationImage(
-                  image: AssetImage('assets/images/flutter.png'),
-                  fit: BoxFit.fill
-                )
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey[600]),
+        ),
+        child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      image: DecorationImage(
+                          image: AssetImage('assets/images/flutter.png'),
+                          fit: BoxFit.fill)),
+                ),
               ),
-            ),
-          ),
-          SizedBox(height: 8.0),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8.0),
-            child: Text(
-              entry['name'],
-              style: TextStyle(
-                fontSize: 18.0
-              )
-            )
-          ),
-          SizedBox(height: 8.0),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8.0),
-            child: Text(
-              '\$' + entry['price'].toString(),
-              style: TextStyle(
-                fontWeight: FontWeight.bold
+              SizedBox(height: 8.0),
+              Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text(entry['name'], style: TextStyle(fontSize: 18.0))),
+              SizedBox(height: 8.0),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text(
+                  '\$' + entry['price'].toString(),
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
-            ),
-          ),
-          SizedBox(height: 8.0)
-        ]
-      )
-    );
+              SizedBox(height: 8.0)
+            ]));
   }
 }
 
@@ -109,10 +89,9 @@ class PagewiseListViewExample extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PagewiseListView(
-      pageSize: 6,
-      itemBuilder: this._itemBuilder,
-      pageFuture: BackendService.getPage
-    );
+        pageSize: 6,
+        itemBuilder: this._itemBuilder,
+        pageFuture: BackendService.getPage);
   }
 
   Widget _itemBuilder(context, entry, _) {

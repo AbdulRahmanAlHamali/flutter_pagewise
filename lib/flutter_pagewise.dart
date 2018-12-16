@@ -135,7 +135,6 @@ typedef PagewiseBuilder(PagewiseState state);
 ///  * [PagewiseGridView], a [Pagewise] implementation of [GridView](https://docs.flutter.io/flutter/widgets/GridView-class.html)
 ///  * [PagewiseListView], a [Pagewise] implementation of [ListView](https://docs.flutter.io/flutter/widgets/ListView-class.html)
 abstract class Pagewise extends StatefulWidget {
-
   /// The number  of entries per page
   final int pageSize;
 
@@ -241,28 +240,27 @@ abstract class Pagewise extends StatefulWidget {
   /// This is an abstract class, this constructor should only be called from
   /// constructors of widgets that extend this class
   Pagewise(
-      {@ required this.pageSize,
-        @required this.pageFuture,
-        Key key,
-        this.loadingBuilder,
-        this.retryBuilder,
-        this.showRetry: true,
-        @required this.itemBuilder,
-        this.errorBuilder,
-        @required this.builder
-      })
+      {@required this.pageSize,
+      @required this.pageFuture,
+      Key key,
+      this.loadingBuilder,
+      this.retryBuilder,
+      this.showRetry: true,
+      @required this.itemBuilder,
+      this.errorBuilder,
+      @required this.builder})
       : assert(showRetry != null),
         assert(showRetry == false || errorBuilder == null,
-        'Cannot specify showRetry and errorBuilder at the same time'),
+            'Cannot specify showRetry and errorBuilder at the same time'),
         assert(showRetry == true || retryBuilder == null,
-        "Cannot specify retryBuilder when showRetry is set to false"),
+            "Cannot specify retryBuilder when showRetry is set to false"),
         super(key: key);
 
-  @override PagewiseState createState() => PagewiseState();
+  @override
+  PagewiseState createState() => PagewiseState();
 }
 
 class PagewiseState extends State<Pagewise> {
-
   List _loadedItems;
   int _loadedPages;
   bool _hasMoreItems;
@@ -281,7 +279,7 @@ class PagewiseState extends State<Pagewise> {
     try {
       page = await widget.pageFuture(this._loadedPages);
       this._loadedPages++;
-    } catch(error) {
+    } catch (error) {
       if (this.mounted) {
         setState(() {
           this._error = error;
@@ -310,7 +308,6 @@ class PagewiseState extends State<Pagewise> {
 
   Widget _itemBuilder(BuildContext context, int index) {
     if (index == this._loadedItems.length) {
-
       if (this._error != null) {
         if (widget.showRetry) {
           return this._getRetryWidget();
@@ -332,24 +329,19 @@ class PagewiseState extends State<Pagewise> {
 
   Widget _getLoadingWidget() {
     return this._getStandardContainer(
-      child: widget.loadingBuilder != null
-          ? widget.loadingBuilder(context)
-          : CircularProgressIndicator()
-    );
+        child: widget.loadingBuilder != null
+            ? widget.loadingBuilder(context)
+            : CircularProgressIndicator());
   }
 
   Widget _getErrorWidget(Object error) {
     return this._getStandardContainer(
-      child: widget.errorBuilder != null
-        ? widget.errorBuilder(context, this._error)
-        : Text(
-          'Error: $error',
-          style: TextStyle(
-            color: Theme.of(context).disabledColor,
-            fontStyle: FontStyle.italic
-          )
-        )
-    );
+        child: widget.errorBuilder != null
+            ? widget.errorBuilder(context, this._error)
+            : Text('Error: $error',
+                style: TextStyle(
+                    color: Theme.of(context).disabledColor,
+                    fontStyle: FontStyle.italic)));
   }
 
   Widget _getRetryWidget() {
@@ -364,21 +356,18 @@ class PagewiseState extends State<Pagewise> {
     );
 
     return this._getStandardContainer(
-      child: widget.retryBuilder != null
-          ? widget.retryBuilder(context, this._retry)
-          : defaultRetryButton
-    );
-
+        child: widget.retryBuilder != null
+            ? widget.retryBuilder(context, this._retry)
+            : defaultRetryButton);
   }
-  
+
   Widget _getStandardContainer({Widget child}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: child,
-      )
-    );
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: child,
+        ));
   }
 
   void _retry() {
@@ -389,202 +378,188 @@ class PagewiseState extends State<Pagewise> {
 }
 
 class PagewiseListView extends Pagewise {
-
   /// Creates a Pagewise ListView.
   ///
   /// All the properties are those of normal [ListViews](https://docs.flutter.io/flutter/widgets/ListView-class.html)
   /// except [pageSize], [pageFuture], [loadingBuilder], [retryBuilder],
   /// [showRetry], [itemBuilder] and [errorBuilder]
-  PagewiseListView({
-    Key key,
-    padding,
-    primary,
-    addSemanticIndexes = true,
-    semanticChildCount,
-    shrinkWrap: false,
-    controller,
-    itemExtent,
-    addAutomaticKeepAlives: true,
-    scrollDirection: Axis.vertical,
-    addRepaintBoundaries: true,
-    cacheExtent,
-    physics,
-    reverse: false,
-    @required pageSize,
-    @required pageFuture,
-    loadingBuilder,
-    retryBuilder,
-    showRetry: true,
-    @required itemBuilder,
-    errorBuilder
-  }):
-      super(
-        pageSize: pageSize,
-        pageFuture: pageFuture,
-        key: key,
-        loadingBuilder: loadingBuilder,
-        retryBuilder: retryBuilder,
-        showRetry: showRetry,
-        itemBuilder: itemBuilder,
-        errorBuilder: errorBuilder,
-        builder: (state) {
-          return ListView.builder(
-            itemExtent: itemExtent,
-            addAutomaticKeepAlives: addAutomaticKeepAlives,
-            scrollDirection: scrollDirection,
-            addRepaintBoundaries: addRepaintBoundaries,
-            cacheExtent: cacheExtent,
-            physics: physics,
-            reverse: reverse,
-            padding: padding,
-            addSemanticIndexes: addSemanticIndexes,
-            semanticChildCount: semanticChildCount,
-            shrinkWrap: shrinkWrap,
-            primary: primary,
-            controller: controller,
-            itemCount: state._itemCount,
-            itemBuilder: state._itemBuilder
-          );
-        }
-      );
-
+  PagewiseListView(
+      {Key key,
+      padding,
+      primary,
+      addSemanticIndexes = true,
+      semanticChildCount,
+      shrinkWrap: false,
+      controller,
+      itemExtent,
+      addAutomaticKeepAlives: true,
+      scrollDirection: Axis.vertical,
+      addRepaintBoundaries: true,
+      cacheExtent,
+      physics,
+      reverse: false,
+      @required pageSize,
+      @required pageFuture,
+      loadingBuilder,
+      retryBuilder,
+      showRetry: true,
+      @required itemBuilder,
+      errorBuilder})
+      : super(
+            pageSize: pageSize,
+            pageFuture: pageFuture,
+            key: key,
+            loadingBuilder: loadingBuilder,
+            retryBuilder: retryBuilder,
+            showRetry: showRetry,
+            itemBuilder: itemBuilder,
+            errorBuilder: errorBuilder,
+            builder: (state) {
+              return ListView.builder(
+                  itemExtent: itemExtent,
+                  addAutomaticKeepAlives: addAutomaticKeepAlives,
+                  scrollDirection: scrollDirection,
+                  addRepaintBoundaries: addRepaintBoundaries,
+                  cacheExtent: cacheExtent,
+                  physics: physics,
+                  reverse: reverse,
+                  padding: padding,
+                  addSemanticIndexes: addSemanticIndexes,
+                  semanticChildCount: semanticChildCount,
+                  shrinkWrap: shrinkWrap,
+                  primary: primary,
+                  controller: controller,
+                  itemCount: state._itemCount,
+                  itemBuilder: state._itemBuilder);
+            });
 }
 
 class PagewiseGridView extends Pagewise {
-
   /// Creates a Pagewise GridView with a crossAxisCount.
   ///
   /// All the properties are those of normal [GridViews](https://docs.flutter.io/flutter/widgets/GridView-class.html)
   /// except [pageSize], [pageFuture], [loadingBuilder], [retryBuilder],
   /// [showRetry], [itemBuilder] and [errorBuilder]
-  PagewiseGridView.count({
-    Key key,
-    padding,
-    crossAxisCount,
-    childAspectRatio,
-    crossAxisSpacing,
-    mainAxisSpacing,
-    addSemanticIndexes = true,
-    semanticChildCount,
-    primary,
-    shrinkWrap: false,
-    controller,
-    addAutomaticKeepAlives: true,
-    scrollDirection: Axis.vertical,
-    addRepaintBoundaries: true,
-    cacheExtent,
-    physics,
-    reverse: false,
-    @required pageSize,
-    @required pageFuture,
-    loadingBuilder,
-    retryBuilder,
-    showRetry: true,
-    @required itemBuilder,
-    errorBuilder
-  }):
-        super(
-          pageSize: pageSize,
-          pageFuture: pageFuture,
-          key: key,
-          loadingBuilder: loadingBuilder,
-          retryBuilder: retryBuilder,
-          showRetry: showRetry,
-          itemBuilder: itemBuilder,
-          errorBuilder: errorBuilder,
-          builder: (state) {
-
-            return GridView.builder(
-              reverse: reverse,
-              physics: physics,
-              cacheExtent: cacheExtent,
-              addRepaintBoundaries: addRepaintBoundaries,
-              scrollDirection: scrollDirection,
-              addAutomaticKeepAlives: addAutomaticKeepAlives,
-              controller: controller,
-              primary: primary,
-              shrinkWrap: shrinkWrap,
-              padding: padding,
-              addSemanticIndexes: addSemanticIndexes,
-              semanticChildCount: semanticChildCount,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCountAndLoading(
-                crossAxisCount: crossAxisCount,
-                childAspectRatio: childAspectRatio,
-                crossAxisSpacing: crossAxisSpacing,
-                mainAxisSpacing: mainAxisSpacing,
-                itemCount: state._itemCount
-              ),
-              itemCount: state._itemCount,
-              itemBuilder: state._itemBuilder
-            );
-          }
-      );
+  PagewiseGridView.count(
+      {Key key,
+      padding,
+      crossAxisCount,
+      childAspectRatio,
+      crossAxisSpacing,
+      mainAxisSpacing,
+      addSemanticIndexes = true,
+      semanticChildCount,
+      primary,
+      shrinkWrap: false,
+      controller,
+      addAutomaticKeepAlives: true,
+      scrollDirection: Axis.vertical,
+      addRepaintBoundaries: true,
+      cacheExtent,
+      physics,
+      reverse: false,
+      @required pageSize,
+      @required pageFuture,
+      loadingBuilder,
+      retryBuilder,
+      showRetry: true,
+      @required itemBuilder,
+      errorBuilder})
+      : super(
+            pageSize: pageSize,
+            pageFuture: pageFuture,
+            key: key,
+            loadingBuilder: loadingBuilder,
+            retryBuilder: retryBuilder,
+            showRetry: showRetry,
+            itemBuilder: itemBuilder,
+            errorBuilder: errorBuilder,
+            builder: (state) {
+              return GridView.builder(
+                  reverse: reverse,
+                  physics: physics,
+                  cacheExtent: cacheExtent,
+                  addRepaintBoundaries: addRepaintBoundaries,
+                  scrollDirection: scrollDirection,
+                  addAutomaticKeepAlives: addAutomaticKeepAlives,
+                  controller: controller,
+                  primary: primary,
+                  shrinkWrap: shrinkWrap,
+                  padding: padding,
+                  addSemanticIndexes: addSemanticIndexes,
+                  semanticChildCount: semanticChildCount,
+                  gridDelegate:
+                      SliverGridDelegateWithFixedCrossAxisCountAndLoading(
+                          crossAxisCount: crossAxisCount,
+                          childAspectRatio: childAspectRatio,
+                          crossAxisSpacing: crossAxisSpacing,
+                          mainAxisSpacing: mainAxisSpacing,
+                          itemCount: state._itemCount),
+                  itemCount: state._itemCount,
+                  itemBuilder: state._itemBuilder);
+            });
 
   /// Creates a Pagewise GridView with a maxCrossAxisExtent.
   ///
   /// All the properties are those of normal [GridViews](https://docs.flutter.io/flutter/widgets/GridView-class.html)
   /// except [pageSize], [pageFuture], [loadingBuilder], [retryBuilder],
   /// [showRetry], [itemBuilder] and [errorBuilder]
-  PagewiseGridView.extent({
-    Key key,
-    padding,
-    @required double maxCrossAxisExtent,
-    childAspectRatio,
-    crossAxisSpacing,
-    mainAxisSpacing,
-    addSemanticIndexes = true,
-    semanticChildCount,
-    primary,
-    shrinkWrap: false,
-    controller,
-    addAutomaticKeepAlives: true,
-    scrollDirection: Axis.vertical,
-    addRepaintBoundaries: true,
-    cacheExtent,
-    physics,
-    reverse: false,
-    @required pageSize,
-    @required pageFuture,
-    loadingBuilder,
-    retryBuilder,
-    showRetry: true,
-    @required itemBuilder,
-    errorBuilder
-  }):
-        super(
-          pageSize: pageSize,
-          pageFuture: pageFuture,
-          key: key,
-          loadingBuilder: loadingBuilder,
-          retryBuilder: retryBuilder,
-          showRetry: showRetry,
-          itemBuilder: itemBuilder,
-          errorBuilder: errorBuilder,
-          builder: (state) {
-
-            return GridView.builder(
-                reverse: reverse,
-                physics: physics,
-                cacheExtent: cacheExtent,
-                addRepaintBoundaries: addRepaintBoundaries,
-                scrollDirection: scrollDirection,
-                addAutomaticKeepAlives: addAutomaticKeepAlives,
-                addSemanticIndexes: addSemanticIndexes,
-                semanticChildCount: semanticChildCount,
-                controller: controller,
-                primary: primary,
-                shrinkWrap: shrinkWrap,
-                padding: padding,
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtentAndLoading(
-                    maxCrossAxisExtent: maxCrossAxisExtent,
-                    childAspectRatio: childAspectRatio,
-                    crossAxisSpacing: crossAxisSpacing,
-                    mainAxisSpacing: mainAxisSpacing,
-                    itemCount: state._itemCount
-                ),
-                itemCount: state._itemCount,
-                itemBuilder: state._itemBuilder
-            );
-          }
-      );
+  PagewiseGridView.extent(
+      {Key key,
+      padding,
+      @required double maxCrossAxisExtent,
+      childAspectRatio,
+      crossAxisSpacing,
+      mainAxisSpacing,
+      addSemanticIndexes = true,
+      semanticChildCount,
+      primary,
+      shrinkWrap: false,
+      controller,
+      addAutomaticKeepAlives: true,
+      scrollDirection: Axis.vertical,
+      addRepaintBoundaries: true,
+      cacheExtent,
+      physics,
+      reverse: false,
+      @required pageSize,
+      @required pageFuture,
+      loadingBuilder,
+      retryBuilder,
+      showRetry: true,
+      @required itemBuilder,
+      errorBuilder})
+      : super(
+            pageSize: pageSize,
+            pageFuture: pageFuture,
+            key: key,
+            loadingBuilder: loadingBuilder,
+            retryBuilder: retryBuilder,
+            showRetry: showRetry,
+            itemBuilder: itemBuilder,
+            errorBuilder: errorBuilder,
+            builder: (state) {
+              return GridView.builder(
+                  reverse: reverse,
+                  physics: physics,
+                  cacheExtent: cacheExtent,
+                  addRepaintBoundaries: addRepaintBoundaries,
+                  scrollDirection: scrollDirection,
+                  addAutomaticKeepAlives: addAutomaticKeepAlives,
+                  addSemanticIndexes: addSemanticIndexes,
+                  semanticChildCount: semanticChildCount,
+                  controller: controller,
+                  primary: primary,
+                  shrinkWrap: shrinkWrap,
+                  padding: padding,
+                  gridDelegate:
+                      SliverGridDelegateWithMaxCrossAxisExtentAndLoading(
+                          maxCrossAxisExtent: maxCrossAxisExtent,
+                          childAspectRatio: childAspectRatio,
+                          crossAxisSpacing: crossAxisSpacing,
+                          mainAxisSpacing: mainAxisSpacing,
+                          itemCount: state._itemCount),
+                  itemCount: state._itemCount,
+                  itemBuilder: state._itemBuilder);
+            });
 }
