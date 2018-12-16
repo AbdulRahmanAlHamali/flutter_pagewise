@@ -30,7 +30,7 @@ import 'package:flutter_pagewise/flutter_pagewise.dart';
 
 ## Using the library
 The library provides two main widgets:
- * [PagewiseGridView]: A pagewise implementation of [GridView](https://docs.flutter.io/flutter/widgets/GridView-class.html). It could be
+ * `PagewiseGridView`: A pagewise implementation of [GridView](https://docs.flutter.io/flutter/widgets/GridView-class.html). It could be
  used as follows:
  ```dart
  PagewiseGridView.count(
@@ -49,7 +49,7 @@ The library provides two main widgets:
  );
  ```
 
- * [PagewiseListView]: A pagewise implementation of [ListView](https://docs.flutter.io/flutter/widgets/ListView-class.html). It could be
+ * `PagewiseListView`: A pagewise implementation of [ListView](https://docs.flutter.io/flutter/widgets/ListView-class.html). It could be
  used as follows:
  ```dart
  PagewiseListView(
@@ -65,15 +65,15 @@ The library provides two main widgets:
  ```
 
 The classes provide all the properties of `ListViews` and
-`GridViews`. In addition, you must provide the [itemBuilder], which
-tells Pagewise how you want to render each element, and [pageFuture],
+`GridViews`. In addition, you must provide the `itemBuilder`, which
+tells Pagewise how you want to render each element, and `pageFuture`,
 which Pagewise calls to fetch new pages. Please note that `pageFuture`
-must not return more values than mentioned in the [pageSize] parameter.
+must not return more values than mentioned in the `pageSize` parameter.
 
 ## Customizing the widget:
 In addition to the required parameters, Pagewise provides you with
-optional parameters to customize the widget. You have [loadingBuilder],
-[errorBuilder], and [retryBuilder] to customize the widgets that show
+optional parameters to customize the widget. You have `loadingBuilder`,
+`errorBuilder`, and `retryBuilder` to customize the widgets that show
 on loading, error, and retry respectively.
 
 The `loadingBuilder` can be used as follows:
@@ -107,5 +107,5 @@ errorBuilder: (context, error) {
 Check the classes' documentation for more details.
 
 ## Creating your own Pagewise Widgets:
-You need to inherit from the [Pagewise] class. Check the code of
-[PagewiseListView] and [PagewiseGridView] for examples
+You need to inherit from the `Pagewise` class. Check the code of
+`PagewiseListView` and `PagewiseGridView` for examples
