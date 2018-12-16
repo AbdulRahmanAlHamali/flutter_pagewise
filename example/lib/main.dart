@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_pagewise/flutter_pagewise.dart';
@@ -47,10 +46,9 @@ class MyHomePage extends StatelessWidget {
 class PagewiseGridViewExample extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return PagewiseGridView(
+    return PagewiseGridView.count(
       pageSize: 6,
-      totalCount: 40,
-      crossAxisCount: 2,
+      crossAxisCount: 3,
       mainAxisSpacing: 8.0,
       crossAxisSpacing: 8.0,
       childAspectRatio: 0.555,
@@ -60,7 +58,7 @@ class PagewiseGridViewExample extends StatelessWidget {
     );
   }
 
-  Widget _itemBuilder(context, entry) {
+  Widget _itemBuilder(context, entry, _) {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey[600]),
@@ -112,32 +110,38 @@ class PagewiseListViewExample extends StatelessWidget {
   Widget build(BuildContext context) {
     return PagewiseListView(
       pageSize: 6,
-      totalCount: 40,
-      padding: EdgeInsets.all(15.0),
-      itemListBuilder: this._itemListBuilder,
+      itemBuilder: this._itemBuilder,
       pageFuture: BackendService.getPage
     );
   }
 
-  List<Widget> _itemListBuilder(context, entry) {
-    return [
-      ListTile(
-        leading: Icon(
-          Icons.shopping_cart,
-          color: Colors.brown[200],
-        ),
-        title: Text(entry['name']),
-        subtitle: Text('\$' + entry['price'].toString()),
+  Widget _itemBuilder(context, entry, _) {
+    return ListTile(
+      leading: Icon(
+        Icons.shopping_cart,
+        color: Colors.brown[200],
       ),
-      Divider()
-    ];
+      title: Text(entry['name']),
+      subtitle: Text('\$' + entry['price'].toString()),
+    );
   }
 }
 
 class BackendService {
   static Future<List> getPage(pageIndex) async {
+    await Future.delayed(Duration(seconds: 1));
+
+    if (pageIndex == 3 && Random().nextInt(10) < 7) {
+      throw 'I am an exception!';
+    }
+
     int size = 6;
     var rng = Random();
+
+    if (pageIndex == 7) {
+      return [];
+    }
+
     List list = List.generate(pageIndex < 6 ? size : 5, (index) {
       int dataNumber = index + pageIndex * size;
       return {
@@ -145,9 +149,6 @@ class BackendService {
         'price': rng.nextInt(100)
       };
     });
-    // The second page will take 3 seconds to load, while the rest of the pages will take 2
-    // This is useful to test cases where later pages might be fetched before earlier pages
-    await Future.delayed(Duration(seconds: pageIndex == 1? 3: 2));
     return list;
   }
 }

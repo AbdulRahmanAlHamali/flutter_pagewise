@@ -7,21 +7,38 @@
 /// * ListView and GridView implementations
 /// * Extendability using inheritance
 ///
-/// The library provides three widgets:
-///  * [Pagewise]: An abstract widget that pagewise widgets must extend and
-/// implement the [Pagewise.buildPage] function
+/// ## Breaking Change Starting V1.0.0:
+/// The library has been rewritten in version 1.0.0 to provide a more
+/// efficient implementation that does not require a `totalCount` parameter
+/// and shows only one loading sign when users scroll down. In addition,
+/// a new parameter has been added to `itemBuilder` callback to provide
+/// the index if needed by the user.
+///
+/// ## Installing the library:
+///
+/// Like any other package, add the library to your pubspec.yaml dependencies:
+/// ```
+/// dependencies:
+//    flutter_pagewise:
+/// ```
+/// Then import it wherever you want to use it:
+/// ```
+/// import 'package:flutter_pagewise/flutter_pagewise.dart';
+/// ```
+///
+/// ## Using the library
+/// The library provides two main widgets:
 ///  * [PagewiseGridView]: A pagewise implementation of [GridView](https://docs.flutter.io/flutter/widgets/GridView-class.html). It could be
 ///  used as follows:
 ///  ```dart
-///  PagewiseGridView(
+///  PagewiseGridView.count(
 ///    pageSize: 10,
-///    totalCount: 40,
 ///    crossAxisCount: 2,
 ///    mainAxisSpacing: 8.0,
 ///    crossAxisSpacing: 8.0,
 ///    childAspectRatio: 0.555,
 ///    padding: EdgeInsets.all(15.0),
-///    itemBuilder: (context, entry) {
+///    itemBuilder: (context, entry, index) {
 ///      // return a widget that displays the entry's data
 ///    },
 ///    pageFuture: (pageIndex) {
@@ -35,9 +52,8 @@
 ///  ```dart
 ///  PagewiseListView(
 ///    pageSize: 10,
-///    totalCount: 40,
 ///    padding: EdgeInsets.all(15.0),
-///    itemBuilder: (BuildContext context, entry) {
+///    itemBuilder: (context, entry, index) {
 ///      // return a widget that displays the entry's data
 ///    },
 ///    pageFuture: (pageIndex) {
@@ -46,38 +62,63 @@
 ///  );
 ///  ```
 ///
-/// Check the classes' documentation for more details.
+/// The classes provide all the properties of `ListViews` and
+/// `GridViews`. In addition, you must provide the [Pagewise.itemBuilder], which
+/// tells Pagewise how you want to render each element, and [Pagewise.pageFuture],
+/// which Pagewise calls to fetch new pages. Please note that `pageFuture`
+/// must not return more values than mentioned in the [Pagewise.pageSize] parameter.
 ///
-/// If you don't want to use [PagewiseGridView] or [PagewiseListView], you can
-/// implement your own pagewise widget, by extending [Pagewise] class and
-/// implementing the _buildWidget function, which takes a page (a list of data)
-/// and returns a widget that displays this data. For example, to implement
-/// a PagewiseColumn:
-/// ```dart
-/// @override
-/// Widget buildPage(BuildContext context, List page) {
-///   return Column(
-///     children: page.map((entry) => this.itemBuilder(context, entry)).toList();
+/// ## Customizing the widget:
+/// In addition to the required parameters, Pagewise provides you with
+/// optional parameters to customize the widget. You have [Pagewise.loadingBuilder],
+/// [Pagewise.errorBuilder], and [Pagewise.retryBuilder] to customize the widgets that show
+/// on loading, error, and retry respectively.
+///
+/// The `loadingBuilder` can be used as follows:
+/// ```
+/// loadingBuilder: (context) {
+///   return Text('Loading...');
+/// }
+/// ```
+///
+/// The `retryBuilder` can be used as follows:
+/// ```
+/// retryBuilder: (context, callback) {
+///   return RaisedButton(
+///     child: Text('Retry'),
+///     onPressed: () => callback()
 ///   );
 /// }
 /// ```
-/// Note that in the code above I'm assuming that your implementation uses an
-/// itemBuilder function to build a widget for each entry. This, of course, is
-/// not necessary.
+/// Thus, the `retryBuilder` provides you with a callback that you can
+/// call when you want to retry.
+///
+/// The `errorBuilder` is only relevant when `showRetry` is set to `false`,
+/// because, otherwise, the `retryBuilder` is shown instead. The `errorBuilder`
+/// can be used as follows:
+/// ```
+/// errorBuilder: (context, error) {
+///   return Text('Error: $error');
+/// }
+/// ```
+///
+/// Check the classes' documentation for more details.
+///
+/// ## Creating your own Pagewise Widgets:
+/// You need to inherit from the [Pagewise] class. Check the code of
+/// [PagewiseListView] and [PagewiseGridView] for examples
 library flutter_pagewise;
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:async/async.dart';
+import 'package:flutter_pagewise/helpers/grid_helpers.dart';
 
-typedef Widget ItemBuilder<T>(BuildContext context, T entry);
-typedef List<Widget> ItemListBuilder<T>(BuildContext context, T entry);
+typedef Widget ItemBuilder<T>(BuildContext context, T entry, int index);
 typedef Future<List> PageFuture(int pageIndex);
 typedef Widget ErrorBuilder(BuildContext context, Object error);
 typedef Widget LoadingBuilder(BuildContext context);
 typedef Widget RetryBuilder(BuildContext context, RetryCallback retryCallback);
 typedef void RetryCallback();
+typedef PagewiseBuilder(PagewiseState state);
 
 /// An abstract base class for widgets that fetch their content one page at a
 /// time.
@@ -86,43 +127,24 @@ typedef void RetryCallback();
 /// memory
 ///
 /// You can build your own Pagewise widgets by extending this class and
-/// implementing the [buildPage] function which receives the page (or batch) of
-/// data as a parameter, and returns a widget that holds this page's data
+/// returning your builder in the [builder] function which provides you with the
+/// Pagewise state. Look [PagewiseListView] and [PagewiseGridView] for examples.
 ///
 /// See also:
 ///
 ///  * [PagewiseGridView], a [Pagewise] implementation of [GridView](https://docs.flutter.io/flutter/widgets/GridView-class.html)
 ///  * [PagewiseListView], a [Pagewise] implementation of [ListView](https://docs.flutter.io/flutter/widgets/ListView-class.html)
-abstract class Pagewise extends StatelessWidget {
+abstract class Pagewise extends StatefulWidget {
+
   /// The number  of entries per page
   final int pageSize;
-
-  /// The total number of entries.
-  final int totalCount;
 
   /// Called whenever a new page (or batch) is to be fetched
   ///
   /// It is provided with the page index, and expected to return a [Future](https://api.dartlang.org/stable/1.24.3/dart-async/Future-class.html) that
-  /// resolves to a list of entries. These entries will be fed to the
-  /// [buildPage] function to build the page. Please make sure to return
-  /// only [pageSize] or less entries (in the case of the last page) for each
-  /// page.
+  /// resolves to a list of entries. Please make sure to return only [pageSize]
+  /// or less entries (in the case of the last page) for each page.
   final PageFuture pageFuture;
-
-  /// The amount of space by which to inset the children.
-  final EdgeInsetsGeometry padding;
-
-  /// Whether this is the primary scroll view associated with the parent
-  /// [PrimaryScrollController](https://docs.flutter.io/flutter/widgets/PrimaryScrollController-class.html).
-  ///
-  /// Same as [ScrollView.primary](https://docs.flutter.io/flutter/widgets/ScrollView/primary.html)
-  final bool primary;
-
-  /// Whether the extent of the scroll view in the [scrollDirection](https://docs.flutter.io/flutter/widgets/ScrollView/scrollDirection.html) should be
-  /// determined by the contents being viewed.
-  ///
-  /// Same as [ScrollView.shrinkWrap](https://docs.flutter.io/flutter/widgets/ScrollView/shrinkWrap.html)
-  final bool shrinkWrap;
 
   /// Called when loading each page.
   ///
@@ -148,12 +170,6 @@ abstract class Pagewise extends StatelessWidget {
   /// ```
   /// If not specified, a [Text] containing the error will be displayed
   final ErrorBuilder errorBuilder;
-
-  /// An object that can be used to control the position to which this scroll
-  /// view is scrolled.
-  ///
-  /// Same as [ScrollView.controller](https://docs.flutter.io/flutter/widgets/ScrollView/controller.html)
-  final ScrollController controller;
 
   /// Whether to show a retry button when page fails to load.
   ///
@@ -186,145 +202,157 @@ abstract class Pagewise extends StatelessWidget {
   /// If not specified, a simple retry button will be shown
   final RetryBuilder retryBuilder;
 
+  /// Called to build each entry in the view.
+  ///
+  /// It is called for each of the entries fetched by [pageFuture] and provided
+  /// with the [BuildContext](https://docs.flutter.io/flutter/widgets/BuildContext-class.html) and the entry. It is expected to return the widget
+  /// that we want to display for each entry
+  ///
+  /// For example, the [pageFuture] might return a list that looks like:
+  /// ```dart
+  ///[
+  ///  {
+  ///    'name': 'product1',
+  ///    'price': 10
+  ///  },
+  ///  {
+  ///    'name': 'product2',
+  ///    'price': 15
+  ///  },
+  ///]
+  /// ```
+  /// Then itemBuilder will be called twice, once for each entry. We can for
+  /// example do:
+  /// ```dart
+  /// (BuildContext context, dynamic entry) {
+  ///   return Text(entry['name'] + ' - ' + entry['price']);
+  /// }
+  /// ```
+  final ItemBuilder itemBuilder;
+
+  /// The actual builder that builds the Pagewise widget. It is called and
+  /// provided the PagewiseState. This function is important only for classes
+  /// extending Pagewise. See [PagewiseListView] and [PagewiseGridView] for
+  /// examples.
+  final PagewiseBuilder builder;
+
   /// Creates a pagewise widget.
   ///
   /// This is an abstract class, this constructor should only be called from
   /// constructors of widgets that extend this class
   Pagewise(
-      {this.pageSize = 10,
-      @required this.totalCount,
-      @required this.pageFuture,
-      Key key,
-      this.padding,
-      this.primary,
-      this.controller,
-      this.shrinkWrap = false,
-      this.loadingBuilder,
-      this.retryBuilder,
-      this.showRetry,
-      this.errorBuilder})
+      {@ required this.pageSize,
+        @required this.pageFuture,
+        Key key,
+        this.loadingBuilder,
+        this.retryBuilder,
+        this.showRetry: true,
+        @required this.itemBuilder,
+        this.errorBuilder,
+        @required this.builder
+      })
       : assert(showRetry != null),
         assert(showRetry == false || errorBuilder == null,
-            'Cannot specify showRetry and errorBuilder at the same time'),
+        'Cannot specify showRetry and errorBuilder at the same time'),
         assert(showRetry == true || retryBuilder == null,
-            "Cannot specify retryBuilder when showRetry is set to false"),
+        "Cannot specify retryBuilder when showRetry is set to false"),
         super(key: key);
 
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      controller: this.controller,
-      padding: this.padding,
-      itemCount: (this.totalCount / this.pageSize).ceil(),
-      primary: this.primary,
-      shrinkWrap: this.shrinkWrap,
-      itemBuilder: (BuildContext context, int pageNumber) {
-        return _Page(
-          pageFuture: this.pageFuture,
-          pageNumber: pageNumber,
-          loadingBuilder: this.loadingBuilder,
-          errorBuilder: this.errorBuilder,
-          pageBuilder: this.buildPage,
-          showRetry: this.showRetry,
-          retryBuilder: this.retryBuilder,
-        );
-      },
-    );
-  }
-
-  /// Called by the Pagewise component for each page of data to be displayed.
-  ///
-  /// It is supposed to use the elements of [page] and return a widget that
-  /// displays those elements.
-  ///
-  /// See also:
-  ///
-  ///  * [PagewiseGridView.buildPage]
-  ///  * [PagewiseListView.buildPage]
-  Widget buildPage(BuildContext context, List page);
+  @override PagewiseState createState() => PagewiseState();
 }
 
-typedef Widget _PageBuilder(BuildContext context, List page);
+class PagewiseState extends State<Pagewise> {
 
-/// This is a private class that represents a page, and wraps it with [AutomaticKeepAliveClientMixin](https://docs.flutter.io/flutter/widgets/AutomaticKeepAliveClientMixin-class.html)
-///
-/// This is needed to keep the fetched pages alive, and maintain their state.
-class _Page extends StatefulWidget {
-  final LoadingBuilder loadingBuilder;
-  final ErrorBuilder errorBuilder;
-  final _PageBuilder pageBuilder;
-  final bool showRetry;
-  final RetryBuilder retryBuilder;
-  final PageFuture pageFuture;
-  final int pageNumber;
-
-  _Page(
-      {this.loadingBuilder,
-      this.errorBuilder,
-      this.pageBuilder,
-      this.showRetry,
-      this.retryBuilder,
-      this.pageFuture,
-      this.pageNumber});
-
-  @override
-  _PageState createState() => _PageState();
-}
-
-class _PageState<T> extends State<_Page> with AutomaticKeepAliveClientMixin {
-  AsyncMemoizer _memoizer;
+  List _loadedItems;
+  int _loadedPages;
+  bool _hasMoreItems;
+  Object _error;
 
   @override
   void initState() {
     super.initState();
-    this._memoizer = new AsyncMemoizer();
+    this._loadedItems = [];
+    this._loadedPages = 0;
+    this._hasMoreItems = true;
   }
+
+  Future<void> _fetchNewPage() async {
+    List page;
+    try {
+      page = await widget.pageFuture(this._loadedPages);
+      this._loadedPages++;
+    } catch(error) {
+      if (this.mounted) {
+        setState(() {
+          this._error = error;
+        });
+      }
+      return;
+    }
+
+    if (this.mounted) {
+      setState(() {
+        if (page.length == 0) {
+          this._hasMoreItems = false;
+        } else {
+          this._loadedItems.addAll(page);
+        }
+      });
+    }
+  }
+
+  int get _itemCount => this._loadedItems.length + 1;
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future:
-          this._memoizer.runOnce(() => widget.pageFuture(widget.pageNumber)),
-      builder: (BuildContext context, AsyncSnapshot snapshot) {
-        switch (snapshot.connectionState) {
-          case ConnectionState.none:
-          case ConnectionState.waiting:
-            return this._getLoadingWidget(context);
-          default:
-            if (snapshot.hasError) {
-              if (widget.showRetry == false) {
-                return widget.errorBuilder != null
-                    ? widget.errorBuilder(context, snapshot.error)
-                    : this._getStandardErrorWidget(snapshot.error);
-              } else {
-                return this._getRetryWidget(context);
-              }
-            } else {
-              return widget.pageBuilder(context, snapshot.data);
-            }
+    return widget.builder(this);
+  }
+
+  Widget _itemBuilder(BuildContext context, int index) {
+    if (index == this._loadedItems.length) {
+
+      if (this._error != null) {
+        if (widget.showRetry) {
+          return this._getRetryWidget();
+        } else {
+          return this._getErrorWidget(this._error);
         }
-      },
+      }
+
+      if (this._hasMoreItems) {
+        this._fetchNewPage();
+        return this._getLoadingWidget();
+      } else {
+        return Container();
+      }
+    } else {
+      return widget.itemBuilder(context, this._loadedItems[index], index);
+    }
+  }
+
+  Widget _getLoadingWidget() {
+    return this._getStandardContainer(
+      child: widget.loadingBuilder != null
+          ? widget.loadingBuilder(context)
+          : CircularProgressIndicator()
     );
   }
 
-  @override
-  bool get wantKeepAlive => true;
-
-  Widget _getLoadingWidget(BuildContext context) {
-    return SizedBox(
-        height: MediaQuery.of(context).size.height *
-            2, // to only load one page at a time
-        child: Padding(
-          padding: const EdgeInsets.only(top: 8.0),
-          child: Align(
-              alignment: Alignment.topCenter,
-              child: widget.loadingBuilder != null
-                  ? widget.loadingBuilder(context)
-                  : CircularProgressIndicator()),
-        ));
+  Widget _getErrorWidget(Object error) {
+    return this._getStandardContainer(
+      child: widget.errorBuilder != null
+        ? widget.errorBuilder(context, this._error)
+        : Text(
+          'Error: $error',
+          style: TextStyle(
+            color: Theme.of(context).disabledColor,
+            fontStyle: FontStyle.italic
+          )
+        )
+    );
   }
 
-  Widget _getRetryWidget(BuildContext context) {
+  Widget _getRetryWidget() {
     var defaultRetryButton = FlatButton(
       child: Icon(
         Icons.refresh,
@@ -335,296 +363,228 @@ class _PageState<T> extends State<_Page> with AutomaticKeepAliveClientMixin {
       onPressed: this._retry,
     );
 
+    return this._getStandardContainer(
+      child: widget.retryBuilder != null
+          ? widget.retryBuilder(context, this._retry)
+          : defaultRetryButton
+    );
+
+  }
+  
+  Widget _getStandardContainer({Widget child}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24.0),
-      child: Center(
-          child: widget.retryBuilder != null
-              ? widget.retryBuilder(context, this._retry)
-              : defaultRetryButton),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: child,
+      )
     );
   }
 
   void _retry() {
     setState(() {
-      this._memoizer = AsyncMemoizer();
+      this._error = null;
     });
   }
-
-  Widget _getStandardErrorWidget(Object error) {
-    return Text('Error: $error');
-  }
 }
 
-/// A [GridView](https://docs.flutter.io/flutter/widgets/GridView-class.html) implementation of [Pagewise]
-///
-/// Elements are displayed in a grid, but fetched one page (or batch) at a time
-class PagewiseGridView extends Pagewise {
-  /// Called to build each entry in the view when we want each entry to
-  /// correspond to a single widget.
-  ///
-  /// It is called for each of the entries fetched by [pageFuture] and provided
-  /// with the [BuildContext](https://docs.flutter.io/flutter/widgets/BuildContext-class.html) and the entry. It is expected to return the widget
-  /// that we want to display for each entry
-  ///
-  /// For example, the [pageFuture] might return a list that looks like:
-  /// ```dart
-  ///[
-  ///  {
-  ///    'name': 'product1',
-  ///    'price': 10
-  ///  },
-  ///  {
-  ///    'name': 'product2',
-  ///    'price': 15
-  ///  },
-  ///]
-  /// ```
-  /// Then itemBuilder will be called twice, once for each entry. We can for
-  /// example do:
-  /// ```dart
-  /// (BuildContext context, dynamic entry) {
-  ///   return Text(entry['name'] + ' - ' + entry['price']);
-  /// }
-  /// ```
-  /// The itemBuilder returns a single widget, if you want to return a list of
-  /// widgets. For example, a [ListTile](https://docs.flutter.io/flutter/material/ListTile-class.html)
-  /// followed by a [Divider](https://docs.flutter.io/flutter/material/Divider-class.html),
-  /// then use the [itemListBuilder] instead.
-  final ItemBuilder itemBuilder;
-
-  /// Called to build each entry in the view when we want each entry to
-  /// correspond to a list of widgets.
-  ///
-  /// This is useful when, for example, we want to display a [ListTile](https://docs.flutter.io/flutter/material/ListTile-class.html)
-  /// followed by a [Divider](https://docs.flutter.io/flutter/material/Divider-class.html)
-  /// for each entry.
-  ///
-  /// It is called for each of the entries fetched by [pageFuture] and provided
-  /// with the [BuildContext](https://docs.flutter.io/flutter/widgets/BuildContext-class.html) and the entry. It is expected to return a list of widgets
-  /// that we want to display for each entry
-  ///
-  /// For example, the [pageFuture] might return a list that looks like:
-  /// ```dart
-  ///[
-  ///  {
-  ///    'name': 'product1',
-  ///    'price': 10
-  ///  },
-  ///  {
-  ///    'name': 'product2',
-  ///    'price': 15
-  ///  },
-  ///]
-  /// ```
-  /// Then itemListBuilder will be called twice, once for each entry. We can for
-  /// example do:
-  /// ```dart
-  /// (BuildContext context, dynamic entry) {
-  ///   return [
-  ///     Text(entry['name'] + ' - ' + entry['price']),
-  ///     Divider()
-  ///   ];
-  /// }
-  /// ```
-  /// The itemListBuilder returns a list of widgets, if you want to return a
-  /// single widget, then use the [itemBuilder] instead.
-  final ItemListBuilder itemListBuilder;
-
-  /// The ratio of the cross-axis to the main-axis extent of each child.
-  ///
-  /// Same as [GridView.childAspectRatio](https://docs.flutter.io/flutter/rendering/SliverGridDelegateWithFixedCrossAxisCount/childAspectRatio.html)
-  final double childAspectRatio;
-
-  /// The number of logical pixels between each child along the main axis.
-  ///
-  /// Same as [GridView.mainAxisSpacing](https://docs.flutter.io/flutter/rendering/SliverGridDelegateWithFixedCrossAxisCount/mainAxisSpacing.html)
-  final double mainAxisSpacing;
-
-  /// The number of logical pixels between each child along the cross axis.
-  ///
-  /// Same as [GridView.crossAxisSpacing](https://docs.flutter.io/flutter/rendering/SliverGridDelegateWithFixedCrossAxisCount/crossAxisSpacing.html)
-  final double crossAxisSpacing;
-
-  /// The number of children in the cross axis.
-  ///
-  /// Same as [GridView.crossAxisCount](https://docs.flutter.io/flutter/rendering/SliverGridDelegateWithFixedCrossAxisCount/crossAxisCount.html)
-  final int crossAxisCount;
-
-  /// Creates a pagewise [GridView](https://docs.flutter.io/flutter/widgets/GridView-class.html)
-  PagewiseGridView(
-      {pageSize = 10,
-      @required totalCount,
-      this.itemBuilder,
-      this.itemListBuilder,
-      @required pageFuture,
-      @required this.crossAxisCount,
-      Key key,
-      this.mainAxisSpacing = 0.0,
-      this.crossAxisSpacing = 0.0,
-      this.childAspectRatio = 1.0,
-      padding,
-      controller,
-      primary,
-      shrinkWrap = false,
-      loadingBuilder,
-      showRetry = true,
-      retryBuilder,
-      errorBuilder})
-      : assert(itemBuilder == null || itemListBuilder == null,
-            "Cannot have both itemBuilder and itemListBuilder"),
-        assert(itemBuilder != null || itemListBuilder != null,
-            "Either itemBuilder or itemListBuilder must be specified and not equal to null"),
-        super(
-            key: key,
-            pageSize: pageSize,
-            totalCount: totalCount,
-            pageFuture: pageFuture,
-            padding: padding,
-            controller: controller,
-            primary: primary,
-            shrinkWrap: shrinkWrap,
-            loadingBuilder: loadingBuilder,
-            showRetry: showRetry,
-            retryBuilder: retryBuilder,
-            errorBuilder: errorBuilder);
-
-  @override
-  Widget buildPage(BuildContext context, List page) {
-    List<Widget> children = this.itemBuilder != null
-        ? page.map<Widget>((item) => this.itemBuilder(context, item)).toList()
-        : page
-            .expand<Widget>((item) => this.itemListBuilder(context, item))
-            .toList();
-
-    return GridView.count(
-        shrinkWrap: true,
-        primary: false,
-        childAspectRatio: this.childAspectRatio,
-        padding: EdgeInsets.only(bottom: this.mainAxisSpacing),
-        mainAxisSpacing: this.mainAxisSpacing,
-        crossAxisSpacing: this.crossAxisSpacing,
-        crossAxisCount: this.crossAxisCount,
-        children: children);
-  }
-}
-
-/// A [ListView](https://docs.flutter.io/flutter/widgets/ListView-class.html) implementation of [Pagewise]
-///
-/// Elements are displayed in a list, but fetched one page (or batch) at a time
 class PagewiseListView extends Pagewise {
-  /// Called to build each entry in the view when we want each entry to
-  /// correspond to a single widget.
-  ///
-  /// It is called for each of the entries fetched by [pageFuture] and provided
-  /// with the [BuildContext](https://docs.flutter.io/flutter/widgets/BuildContext-class.html) and the entry. It is expected to return the widget
-  /// that we want to display for each entry
-  ///
-  /// For example, the [pageFuture] might return a list that looks like:
-  /// ```dart
-  ///[
-  ///  {
-  ///    'name': 'product1',
-  ///    'price': 10
-  ///  },
-  ///  {
-  ///    'name': 'product2',
-  ///    'price': 15
-  ///  },
-  ///]
-  /// ```
-  /// Then itemBuilder will be called twice, once for each entry. We can for
-  /// example do:
-  /// ```dart
-  /// (BuildContext context, dynamic entry) {
-  ///   return Text(entry['name'] + ' - ' + entry['price']);
-  /// }
-  /// ```
-  /// The itemBuilder returns a single widget, if you want to return a list of
-  /// widgets. For example, a [ListTile](https://docs.flutter.io/flutter/material/ListTile-class.html)
-  /// followed by a [Divider](https://docs.flutter.io/flutter/material/Divider-class.html),
-  /// then use the [itemListBuilder] instead.
-  final ItemBuilder itemBuilder;
 
-  /// Called to build each entry in the view when we want each entry to
-  /// correspond to a list of widgets.
+  /// Creates a Pagewise ListView.
   ///
-  /// This is useful when, for example, we want to display a [ListTile](https://docs.flutter.io/flutter/material/ListTile-class.html)
-  /// followed by a [Divider](https://docs.flutter.io/flutter/material/Divider-class.html)
-  /// for each entry.
-  ///
-  /// It is called for each of the entries fetched by [pageFuture] and provided
-  /// with the [BuildContext](https://docs.flutter.io/flutter/widgets/BuildContext-class.html) and the entry. It is expected to return a list of widgets
-  /// that we want to display for each entry
-  ///
-  /// For example, the [pageFuture] might return a list that looks like:
-  /// ```dart
-  ///[
-  ///  {
-  ///    'name': 'product1',
-  ///    'price': 10
-  ///  },
-  ///  {
-  ///    'name': 'product2',
-  ///    'price': 15
-  ///  },
-  ///]
-  /// ```
-  /// Then itemListBuilder will be called twice, once for each entry. We can for
-  /// example do:
-  /// ```dart
-  /// (BuildContext context, dynamic entry) {
-  ///   return [
-  ///     Text(entry['name'] + ' - ' + entry['price']),
-  ///     Divider()
-  ///   ];
-  /// }
-  /// ```
-  /// The itemListBuilder returns a list of widgets, if you want to return a
-  /// single widget, then use the [itemBuilder] instead.
-  final ItemListBuilder itemListBuilder;
-
-  /// Creates a pagewise [ListView](https://docs.flutter.io/flutter/widgets/ListView-class.html)
-  PagewiseListView(
-      {pageSize = 10,
-      @required totalCount,
-      this.itemBuilder,
-      this.itemListBuilder,
-      @required pageFuture,
-      Key key,
-      padding,
-      primary,
-      controller,
-      shrinkWrap = false,
-      loadingBuilder,
-      showRetry = true,
-      retryBuilder,
-      errorBuilder})
-      : assert(itemBuilder == null || itemListBuilder == null,
-            "Cannot have both itemBuilder and itemListBuilder"),
-        assert(itemBuilder != null || itemListBuilder != null,
-            "Either itemBuilder or itemListBuilder must be specified and not equal to null"),
-        super(
-            key: key,
-            pageSize: pageSize,
-            totalCount: totalCount,
-            pageFuture: pageFuture,
+  /// All the properties are those of normal [ListViews](https://docs.flutter.io/flutter/widgets/ListView-class.html)
+  /// except [pageSize], [pageFuture], [loadingBuilder], [retryBuilder],
+  /// [showRetry], [itemBuilder] and [errorBuilder]
+  PagewiseListView({
+    Key key,
+    padding,
+    primary,
+    addSemanticIndexes = true,
+    semanticChildCount,
+    shrinkWrap: false,
+    controller,
+    itemExtent,
+    addAutomaticKeepAlives: true,
+    scrollDirection: Axis.vertical,
+    addRepaintBoundaries: true,
+    cacheExtent,
+    physics,
+    reverse: false,
+    @required pageSize,
+    @required pageFuture,
+    loadingBuilder,
+    retryBuilder,
+    showRetry: true,
+    @required itemBuilder,
+    errorBuilder
+  }):
+      super(
+        pageSize: pageSize,
+        pageFuture: pageFuture,
+        key: key,
+        loadingBuilder: loadingBuilder,
+        retryBuilder: retryBuilder,
+        showRetry: showRetry,
+        itemBuilder: itemBuilder,
+        errorBuilder: errorBuilder,
+        builder: (state) {
+          return ListView.builder(
+            itemExtent: itemExtent,
+            addAutomaticKeepAlives: addAutomaticKeepAlives,
+            scrollDirection: scrollDirection,
+            addRepaintBoundaries: addRepaintBoundaries,
+            cacheExtent: cacheExtent,
+            physics: physics,
+            reverse: reverse,
             padding: padding,
-            controller: controller,
-            primary: primary,
+            addSemanticIndexes: addSemanticIndexes,
+            semanticChildCount: semanticChildCount,
             shrinkWrap: shrinkWrap,
-            loadingBuilder: loadingBuilder,
-            showRetry: showRetry,
-            retryBuilder: retryBuilder,
-            errorBuilder: errorBuilder);
+            primary: primary,
+            controller: controller,
+            itemCount: state._itemCount,
+            itemBuilder: state._itemBuilder
+          );
+        }
+      );
 
-  @override
-  Widget buildPage(BuildContext context, List page) {
-    List<Widget> children = this.itemBuilder != null
-        ? page.map<Widget>((item) => this.itemBuilder(context, item)).toList()
-        : page
-            .expand<Widget>((item) => this.itemListBuilder(context, item))
-            .toList();
+}
 
-    return ListView(shrinkWrap: true, primary: false, children: children);
-  }
+class PagewiseGridView extends Pagewise {
+
+  /// Creates a Pagewise GridView with a crossAxisCount.
+  ///
+  /// All the properties are those of normal [GridViews](https://docs.flutter.io/flutter/widgets/GridView-class.html)
+  /// except [pageSize], [pageFuture], [loadingBuilder], [retryBuilder],
+  /// [showRetry], [itemBuilder] and [errorBuilder]
+  PagewiseGridView.count({
+    Key key,
+    padding,
+    crossAxisCount,
+    childAspectRatio,
+    crossAxisSpacing,
+    mainAxisSpacing,
+    addSemanticIndexes = true,
+    semanticChildCount,
+    primary,
+    shrinkWrap: false,
+    controller,
+    addAutomaticKeepAlives: true,
+    scrollDirection: Axis.vertical,
+    addRepaintBoundaries: true,
+    cacheExtent,
+    physics,
+    reverse: false,
+    @required pageSize,
+    @required pageFuture,
+    loadingBuilder,
+    retryBuilder,
+    showRetry: true,
+    @required itemBuilder,
+    errorBuilder
+  }):
+        super(
+          pageSize: pageSize,
+          pageFuture: pageFuture,
+          key: key,
+          loadingBuilder: loadingBuilder,
+          retryBuilder: retryBuilder,
+          showRetry: showRetry,
+          itemBuilder: itemBuilder,
+          errorBuilder: errorBuilder,
+          builder: (state) {
+
+            return GridView.builder(
+              reverse: reverse,
+              physics: physics,
+              cacheExtent: cacheExtent,
+              addRepaintBoundaries: addRepaintBoundaries,
+              scrollDirection: scrollDirection,
+              addAutomaticKeepAlives: addAutomaticKeepAlives,
+              controller: controller,
+              primary: primary,
+              shrinkWrap: shrinkWrap,
+              padding: padding,
+              addSemanticIndexes: addSemanticIndexes,
+              semanticChildCount: semanticChildCount,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCountAndLoading(
+                crossAxisCount: crossAxisCount,
+                childAspectRatio: childAspectRatio,
+                crossAxisSpacing: crossAxisSpacing,
+                mainAxisSpacing: mainAxisSpacing,
+                itemCount: state._itemCount
+              ),
+              itemCount: state._itemCount,
+              itemBuilder: state._itemBuilder
+            );
+          }
+      );
+
+  /// Creates a Pagewise GridView with a maxCrossAxisExtent.
+  ///
+  /// All the properties are those of normal [GridViews](https://docs.flutter.io/flutter/widgets/GridView-class.html)
+  /// except [pageSize], [pageFuture], [loadingBuilder], [retryBuilder],
+  /// [showRetry], [itemBuilder] and [errorBuilder]
+  PagewiseGridView.extent({
+    Key key,
+    padding,
+    @required double maxCrossAxisExtent,
+    childAspectRatio,
+    crossAxisSpacing,
+    mainAxisSpacing,
+    addSemanticIndexes = true,
+    semanticChildCount,
+    primary,
+    shrinkWrap: false,
+    controller,
+    addAutomaticKeepAlives: true,
+    scrollDirection: Axis.vertical,
+    addRepaintBoundaries: true,
+    cacheExtent,
+    physics,
+    reverse: false,
+    @required pageSize,
+    @required pageFuture,
+    loadingBuilder,
+    retryBuilder,
+    showRetry: true,
+    @required itemBuilder,
+    errorBuilder
+  }):
+        super(
+          pageSize: pageSize,
+          pageFuture: pageFuture,
+          key: key,
+          loadingBuilder: loadingBuilder,
+          retryBuilder: retryBuilder,
+          showRetry: showRetry,
+          itemBuilder: itemBuilder,
+          errorBuilder: errorBuilder,
+          builder: (state) {
+
+            return GridView.builder(
+                reverse: reverse,
+                physics: physics,
+                cacheExtent: cacheExtent,
+                addRepaintBoundaries: addRepaintBoundaries,
+                scrollDirection: scrollDirection,
+                addAutomaticKeepAlives: addAutomaticKeepAlives,
+                addSemanticIndexes: addSemanticIndexes,
+                semanticChildCount: semanticChildCount,
+                controller: controller,
+                primary: primary,
+                shrinkWrap: shrinkWrap,
+                padding: padding,
+                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtentAndLoading(
+                    maxCrossAxisExtent: maxCrossAxisExtent,
+                    childAspectRatio: childAspectRatio,
+                    crossAxisSpacing: crossAxisSpacing,
+                    mainAxisSpacing: mainAxisSpacing,
+                    itemCount: state._itemCount
+                ),
+                itemCount: state._itemCount,
+                itemBuilder: state._itemBuilder
+            );
+          }
+      );
 }

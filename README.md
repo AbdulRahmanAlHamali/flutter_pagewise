@@ -1,35 +1,46 @@
-# flutter_pagewise
-
 A library for widgets that load their content one page (or batch) at a time (also known as lazy-loading).
 
 <img src="https://raw.githubusercontent.com/AbdulRahmanAlHamali/flutter_pagewise/master/flutter_pagewise.gif">
 
 ## Features
-
 * Load data one page at a time
 * Retry failed pages
 * Override the default loading, retry, and error widgets if desired
-* ListView and GridView implementations 
+* ListView and GridView implementations
 * Extendability using inheritance
 
-## Installation
-See the [installation instructions on pub](https://pub.dartlang.org/packages/flutter_pagewise#-installing-tab-).
-## How to use
-The library provides three widgets:
- * [Pagewise](https://pub.dartlang.org/documentation/flutter_pagewise/latest/flutter_pagewise/Pagewise-class.html): An abstract widget that pagewise widgets must extend and
-implement the [buildPage]((https://pub.dartlang.org/documentation/flutter_pagewise/latest/flutter_pagewise/Pagewise/buildPage.html)) function
- * [PagewiseGridView](https://pub.dartlang.org/documentation/flutter_pagewise/latest/flutter_pagewise/PagewiseGridView-class.html): A pagewise implementation of [GridView](https://docs.flutter.io/flutter/widgets/GridView-class.html). It could be
+## Breaking Change Starting V1.0.0:
+The library has been rewritten in version 1.0.0 to provide a more
+efficient implementation that does not require a `totalCount` parameter
+and shows only one loading sign when users scroll down. In addition,
+a new parameter has been added to `itemBuilder` callback to provide
+the index if needed by the user.
+
+## Installing the library:
+
+Like any other package, add the library to your pubspec.yaml dependencies:
+```
+dependencies:
+    flutter_pagewise:
+```
+Then import it wherever you want to use it:
+```
+import 'package:flutter_pagewise/flutter_pagewise.dart';
+```
+
+## Using the library
+The library provides two main widgets:
+ * [PagewiseGridView]: A pagewise implementation of [GridView](https://docs.flutter.io/flutter/widgets/GridView-class.html). It could be
  used as follows:
  ```dart
- PagewiseGridView(
+ PagewiseGridView.count(
    pageSize: 10,
-   totalCount: 40,
    crossAxisCount: 2,
    mainAxisSpacing: 8.0,
    crossAxisSpacing: 8.0,
    childAspectRatio: 0.555,
    padding: EdgeInsets.all(15.0),
-   itemBuilder: (context, entry) {
+   itemBuilder: (context, entry, index) {
      // return a widget that displays the entry's data
    },
    pageFuture: (pageIndex) {
@@ -38,14 +49,13 @@ implement the [buildPage]((https://pub.dartlang.org/documentation/flutter_pagewi
  );
  ```
 
- * [PagewiseListView](https://pub.dartlang.org/documentation/flutter_pagewise/latest/flutter_pagewise/PagewiseListView-class.html): A pagewise implementation of [ListView](https://docs.flutter.io/flutter/widgets/ListView-class.html). It could be
+ * [PagewiseListView]: A pagewise implementation of [ListView](https://docs.flutter.io/flutter/widgets/ListView-class.html). It could be
  used as follows:
  ```dart
  PagewiseListView(
    pageSize: 10,
-   totalCount: 40,
    padding: EdgeInsets.all(15.0),
-   itemBuilder: (BuildContext context, entry) {
+   itemBuilder: (context, entry, index) {
      // return a widget that displays the entry's data
    },
    pageFuture: (pageIndex) {
@@ -54,21 +64,48 @@ implement the [buildPage]((https://pub.dartlang.org/documentation/flutter_pagewi
  );
  ```
 
-Check the [documentation](https://pub.dartlang.org/documentation/flutter_pagewise/latest/flutter_pagewise/flutter_pagewise-library.html) for more details.
+The classes provide all the properties of `ListViews` and
+`GridViews`. In addition, you must provide the [itemBuilder], which
+tells Pagewise how you want to render each element, and [pageFuture],
+which Pagewise calls to fetch new pages. Please note that `pageFuture`
+must not return more values than mentioned in the [pageSize] parameter.
 
-If you don't want to use [PagewiseGridView](https://pub.dartlang.org/documentation/flutter_pagewise/latest/flutter_pagewise/PagewiseGridView-class.html) or [PagewiseListView](https://pub.dartlang.org/documentation/flutter_pagewise/latest/flutter_pagewise/PagewiseListView-class.html), you can
-implement your own pagewise widget, by extending [Pagewise](https://pub.dartlang.org/documentation/flutter_pagewise/latest/flutter_pagewise/Pagewise-class.html) class and
-implementing the [buildWidget](https://pub.dartlang.org/documentation/flutter_pagewise/latest/flutter_pagewise/Pagewise/buildPage.html) function, which takes a page (a list of data)
-and returns a widget that displays this data. For example, to implement
-a PagewiseColumn:
-```dart
-@override
-Widget buildPage(BuildContext context, List page) {
-  return Column(
-    children: page.map((entry) => this.itemBuilder(context, entry)).toList();
+## Customizing the widget:
+In addition to the required parameters, Pagewise provides you with
+optional parameters to customize the widget. You have [loadingBuilder],
+[errorBuilder], and [retryBuilder] to customize the widgets that show
+on loading, error, and retry respectively.
+
+The `loadingBuilder` can be used as follows:
+```
+loadingBuilder: (context) {
+  return Text('Loading...');
+}
+```
+
+The `retryBuilder` can be used as follows:
+```
+retryBuilder: (context, callback) {
+  return RaisedButton(
+    child: Text('Retry'),
+    onPressed: () => callback()
   );
 }
 ```
-Note that in the code above I'm assuming that your implementation uses an
-itemBuilder function to build a widget for each entry. This, of course, is
-not necessary.
+Thus, the `retryBuilder` provides you with a callback that you can
+call when you want to retry.
+
+The `errorBuilder` is only relevant when `showRetry` is set to `false`,
+because, otherwise, the `retryBuilder` is shown instead. The `errorBuilder`
+can be used as follows:
+```
+errorBuilder: (context, error) {
+  return Text('Error: $error');
+}
+```
+
+Check the classes' documentation for more details.
+
+## Creating your own Pagewise Widgets:
+You need to inherit from the [Pagewise] class. Check the code of
+[PagewiseListView] and [PagewiseGridView] for examples
