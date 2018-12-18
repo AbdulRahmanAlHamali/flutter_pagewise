@@ -241,7 +241,6 @@ class PagewiseState extends State<Pagewise> {
     if (index > this._effectiveController.loadedItems.length) return null;
 
     if (index == this._effectiveController.loadedItems.length) {
-
       if (this._effectiveController.noItemsFound) {
         return this._getNoItemsFoundWidget();
       }
