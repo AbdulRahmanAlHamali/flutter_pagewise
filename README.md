@@ -106,6 +106,75 @@ errorBuilder: (context, error) {
 
 Check the classes' documentation for more details.
 
+## Providing your own PagewiseLoadController:
+
+Pagewise widgets manage the loading of pages using a 
+`PagewiseLoadController`. This controller is responsible for fetching data,
+handling errors, etc.
+
+You don't have to provide a controller yourself when creating a Pagewise
+widget. The widget will create one for you. However you might wish to create
+one yourself in order to achieve some effects.
+
+Notice though that if you provide a controller yourself, you should provide
+the [pageFuture] and [pageSize] parameters to the *controller* instead of
+the widget.
+
+A possible use case of the controller is to force a reset of the loaded
+pages using a [RefreshIndicator](https://docs.flutter.io/flutter/material/RefreshIndicator-class.html).
+you could achieve that as follows:
+
+```dart
+final _pageLoadController = PagewiseLoadController(
+   pageSize: 6,
+   pageFuture: BackendService.getPage
+ );
+
+ @override
+ Widget build(BuildContext context) {
+   return RefreshIndicator(
+     onRefresh: () async {
+       await this._pageLoadController.reset();
+     },
+     child: PagewiseListView(
+         itemBuilder: this._itemBuilder,
+         pageLoadController: this._pageLoadController,
+     ),
+   );
+ }
+```
+
+Another use case for creating the controller yourself is if you want to
+listen to the state of Pagewise and act accordingly.
+For example, you might want to show a specific widget when the list is empty
+In that case, you could do:
+```dart
+final _pageLoadController = PagewiseLoadController(
+  pageSize: 6,
+  pageFuture: BackendService.getPage
+);
+
+bool _empty = false;
+@override
+void initState() {
+  super.initState();
+  this._pageLoadController.addListener(() {
+    if (this._pageLoadController.noItemsFound) {
+      setState(() {
+        this._empty = this._pageLoadController.noItemsFound;
+      });
+    }
+  });
+}
+```
+
+And then in your `build` function you do:
+```dart
+if (this._empty) {
+  return Text('NO ITEMS FOUND');
+}
+```
+
 ## Creating your own Pagewise Widgets:
 You need to inherit from the `Pagewise` class. Check the code of
 `PagewiseListView` and `PagewiseGridView` for examples

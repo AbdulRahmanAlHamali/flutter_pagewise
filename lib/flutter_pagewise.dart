@@ -104,6 +104,77 @@
 ///
 /// Check the classes' documentation for more details.
 ///
+/// ## Providing your own PagewiseLoadController:
+///
+/// Pagewise widgets manage the loading of pages using a
+/// [PagewiseLoadController]. This controller is responsible for fetching data,
+/// handling errors, etc.
+///
+/// You don't have to provide a controller yourself when creating a Pagewise
+/// widget. The widget will create one for you. However you might wish to create
+/// one yourself in order to achieve some effects.
+///
+/// Notice though that if you provide a controller yourself, you should provide
+/// the [pageFuture] and [pageSize] parameters to the *controller* instead of
+/// the widget.
+///
+/// A possible use case of the controller is to force a reset of the loaded
+/// pages using a [RefreshIndicator](https://docs.flutter.io/flutter/material/RefreshIndicator-class.html).
+/// you could achieve that as follows:
+///
+/// ```dart
+/// final _pageLoadController = PagewiseLoadController(
+///   pageSize: 6,
+///   pageFuture: BackendService.getPage
+/// );
+///
+/// @override
+/// Widget build(BuildContext context) {
+///   return RefreshIndicator(
+///     onRefresh: () async {
+///       await this._pageLoadController.reset();
+///     },
+///     child: PagewiseListView(
+///       itemBuilder: this._itemBuilder,
+///       pageLoadController: this._pageLoadController,
+///     ),
+///   );
+/// }
+/// ```
+///
+/// Another use case for creating the controller yourself is if you want to
+/// listen to the state of Pagewise and act accordingly.
+/// For example, you might want to show a specific widget when the list is empty
+/// In that case, you could do:
+/// ```dart
+/// final _pageLoadController = PagewiseLoadController(
+///   pageSize: 6,
+///   pageFuture: BackendService.getPage
+/// );
+///
+/// bool _empty = false;
+///
+/// @override
+/// void initState() {
+///   super.initState();
+///
+///   this._pageLoadController.addListener(() {
+///     if (this._pageLoadController.noItemsFound) {
+///       setState(() {
+///         this._empty = this._pageLoadController.noItemsFound;
+///       });
+///     }
+///   });
+/// }
+/// ```
+///
+/// And then in your `build` function you do:
+/// ```dart
+/// if (this._empty) {
+///   return Text('NO ITEMS FOUND');
+/// }
+/// ```
+///
 /// ## Creating your own Pagewise Widgets:
 /// You need to inherit from the [Pagewise] class. Check the code of
 /// [PagewiseListView] and [PagewiseGridView] for examples
@@ -235,14 +306,22 @@ abstract class Pagewise extends StatefulWidget {
   /// examples.
   final PagewiseBuilder builder;
 
+  /// The controller that controls the loading of pages.
+  ///
+  /// You don't have to provide this parameter unless you want to control or
+  /// listen to the data that Pagewise fetches. Review the documentation of
+  /// [PagewiseLoadController] for more details
+  final PagewiseLoadController controller;
+
   /// Creates a pagewise widget.
   ///
   /// This is an abstract class, this constructor should only be called from
   /// constructors of widgets that extend this class
   Pagewise(
-      {@required this.pageSize,
-      @required this.pageFuture,
+      {this.pageSize,
+      this.pageFuture,
       Key key,
+      this.controller,
       this.loadingBuilder,
       this.retryBuilder,
       this.showRetry: true,
@@ -250,6 +329,8 @@ abstract class Pagewise extends StatefulWidget {
       this.errorBuilder,
       @required this.builder})
       : assert(showRetry != null),
+        assert((controller == null && pageSize != null && pageFuture != null) ||
+            (controller != null && pageSize == null && pageFuture == null)),
         assert(showRetry == false || errorBuilder == null,
             'Cannot specify showRetry and errorBuilder at the same time'),
         assert(showRetry == true || retryBuilder == null,
@@ -261,45 +342,38 @@ abstract class Pagewise extends StatefulWidget {
 }
 
 class PagewiseState extends State<Pagewise> {
-  List _loadedItems;
-  int _loadedPages;
-  bool _hasMoreItems;
-  Object _error;
+  PagewiseLoadController _controller;
+
+  PagewiseLoadController get _effectiveController =>
+      widget.controller ?? this._controller;
+
+  VoidCallback _controllerListener;
 
   @override
   void initState() {
     super.initState();
-    this._loadedItems = [];
-    this._loadedPages = 0;
-    this._hasMoreItems = true;
-  }
 
-  Future<void> _fetchNewPage() async {
-    List page;
-    try {
-      page = await widget.pageFuture(this._loadedPages);
-      this._loadedPages++;
-    } catch (error) {
-      if (this.mounted) {
-        setState(() {
-          this._error = error;
-        });
-      }
-      return;
+    if (widget.controller == null) {
+      this._controller = PagewiseLoadController(
+          pageFuture: widget.pageFuture, pageSize: widget.pageSize);
     }
 
-    if (this.mounted) {
-      setState(() {
-        if (page.length == 0) {
-          this._hasMoreItems = false;
-        } else {
-          this._loadedItems.addAll(page);
-        }
-      });
-    }
+    this._effectiveController.init();
+
+    this._controllerListener = () {
+      setState(() {});
+    };
+
+    this._effectiveController.addListener(this._controllerListener);
   }
 
-  int get _itemCount => this._loadedItems.length + 1;
+  @override
+  void dispose() {
+    super.dispose();
+    this._effectiveController.removeListener(this._controllerListener);
+  }
+
+  int get _itemCount => this._effectiveController.loadedItems.length + 1;
 
   @override
   Widget build(BuildContext context) {
@@ -307,23 +381,24 @@ class PagewiseState extends State<Pagewise> {
   }
 
   Widget _itemBuilder(BuildContext context, int index) {
-    if (index == this._loadedItems.length) {
-      if (this._error != null) {
+    if (index == this._effectiveController.loadedItems.length) {
+      if (this._effectiveController.error != null) {
         if (widget.showRetry) {
           return this._getRetryWidget();
         } else {
-          return this._getErrorWidget(this._error);
+          return this._getErrorWidget(this._effectiveController.error);
         }
       }
 
-      if (this._hasMoreItems) {
-        this._fetchNewPage();
+      if (this._effectiveController.hasMoreItems) {
+        this._effectiveController.fetchNewPage();
         return this._getLoadingWidget();
       } else {
         return Container();
       }
     } else {
-      return widget.itemBuilder(context, this._loadedItems[index], index);
+      return widget.itemBuilder(
+          context, this._effectiveController.loadedItems[index], index);
     }
   }
 
@@ -337,7 +412,7 @@ class PagewiseState extends State<Pagewise> {
   Widget _getErrorWidget(Object error) {
     return this._getStandardContainer(
         child: widget.errorBuilder != null
-            ? widget.errorBuilder(context, this._error)
+            ? widget.errorBuilder(context, this._effectiveController.error)
             : Text('Error: $error',
                 style: TextStyle(
                     color: Theme.of(context).disabledColor,
@@ -352,12 +427,12 @@ class PagewiseState extends State<Pagewise> {
       ),
       color: Colors.grey[300],
       shape: CircleBorder(),
-      onPressed: this._retry,
+      onPressed: this._effectiveController.retry,
     );
 
     return this._getStandardContainer(
         child: widget.retryBuilder != null
-            ? widget.retryBuilder(context, this._retry)
+            ? widget.retryBuilder(context, this._effectiveController.retry)
             : defaultRetryButton);
   }
 
@@ -369,11 +444,153 @@ class PagewiseState extends State<Pagewise> {
           child: child,
         ));
   }
+}
 
-  void _retry() {
-    setState(() {
-      this._error = null;
-    });
+/// The controller responsible for managing page loading in Pagewise
+///
+/// You don't have to provide a controller yourself when creating a Pagewise
+/// widget. The widget will create one for you. However you might wish to create
+/// one yourself in order to achieve some effects.
+///
+/// Notice though that if you provide a controller yourself, you should provide
+/// the [pageFuture] and [pageSize] parameters to the *controller* instead of
+/// the widget.
+///
+/// A possible use case of the controller is to force a reset of the loaded
+/// pages using a [RefreshIndicator](https://docs.flutter.io/flutter/material/RefreshIndicator-class.html).
+/// you could achieve that as follows:
+///
+/// ```dart
+/// final _pageLoadController = PagewiseLoadController(
+//    pageSize: 6,
+//    pageFuture: BackendService.getPage
+//  );
+//
+//  @override
+//  Widget build(BuildContext context) {
+//    return RefreshIndicator(
+//      onRefresh: () async {
+//        await this._pageLoadController.reset();
+//      },
+//      child: PagewiseListView(
+//          itemBuilder: this._itemBuilder,
+//          pageLoadController: this._pageLoadController,
+//      ),
+//    );
+//  }
+/// ```
+///
+/// Another use case for creating the controller yourself is if you want to
+/// listen to the state of Pagewise and act accordingly.
+/// For example, you might want to show a specific widget when the list is empty
+/// In that case, you could do:
+/// ```dart
+/// final _pageLoadController = PagewiseLoadController(
+//    pageSize: 6,
+//    pageFuture: BackendService.getPage
+//  );
+//
+//  bool _empty = false;
+//
+//  @override
+//  void initState() {
+//    super.initState();
+//
+//    this._pageLoadController.addListener(() {
+//      if (this._pageLoadController.noItemsFound) {
+//        setState(() {
+//          this._empty = this._pageLoadController.noItemsFound;
+//        });
+//      }
+//    });
+//  }
+/// ```
+///
+/// And then in your `build` function you do:
+/// ```dart
+/// if (this._empty) {
+//    return Text('NO ITEMS FOUND');
+//  }
+/// ```
+class PagewiseLoadController<T> extends ChangeNotifier {
+  List<T> _loadedItems;
+  int _numberOfLoadedPages;
+  bool _hasMoreItems;
+  Object _error;
+
+  /// Called whenever a new page (or batch) is to be fetched
+  ///
+  /// It is provided with the page index, and expected to return a [Future](https://api.dartlang.org/stable/1.24.3/dart-async/Future-class.html) that
+  /// resolves to a list of entries. Please make sure to return only [pageSize]
+  /// or less entries (in the case of the last page) for each page.
+  final PageFuture pageFuture;
+
+  /// The number  of entries per page
+  final int pageSize;
+
+  /// Creates a PagewiseLoadController.
+  ///
+  /// You must provide both the [pageFuture] and the [pageSize]
+  PagewiseLoadController({@required this.pageFuture, @required this.pageSize});
+
+  /// The list of items that have already been loaded
+  List<T> get loadedItems => this._loadedItems;
+
+  /// The number of pages that have already been loaded
+  int get numberOfLoadedPages => this._numberOfLoadedPages;
+
+  /// Whether there are still more items to load
+  bool get hasMoreItems => this._hasMoreItems;
+
+  /// The latest error that has been faced when trying to load a page
+  Object get error => this._error;
+
+  /// set to true if no data was found
+  bool get noItemsFound =>
+      this._loadedItems.length == 0 && this.hasMoreItems == false;
+
+  /// Called to initialize the controller. Same as [reset]
+  init() {
+    this.reset();
+  }
+
+  /// Resets all the information of the controller
+  reset() {
+    this._loadedItems = [];
+    this._numberOfLoadedPages = 0;
+    this._hasMoreItems = true;
+    this._error = null;
+    this.notifyListeners();
+  }
+
+  /// Fetches a new page by calling [pageFuture]
+  Future<void> fetchNewPage() async {
+    List<T> page;
+    try {
+      page = await this.pageFuture(this._numberOfLoadedPages);
+      this._numberOfLoadedPages++;
+    } catch (error) {
+      this._error = error;
+      this.notifyListeners();
+      return;
+    }
+
+    if (page.length > this.pageSize) {
+      throw ('Page length (${page.length}) is greater than the maximum size (${this.pageSize})');
+    }
+
+    if (page.length == 0) {
+      this._hasMoreItems = false;
+    } else {
+      this._loadedItems.addAll(page);
+    }
+    notifyListeners();
+  }
+
+  /// Attempts to retry in case an error occurred
+  retry() {
+    this._error = null;
+    this.notifyListeners();
   }
 }
 
@@ -391,6 +608,7 @@ class PagewiseListView extends Pagewise {
       semanticChildCount,
       shrinkWrap: false,
       controller,
+      pageLoadController,
       itemExtent,
       addAutomaticKeepAlives: true,
       scrollDirection: Axis.vertical,
@@ -398,8 +616,8 @@ class PagewiseListView extends Pagewise {
       cacheExtent,
       physics,
       reverse: false,
-      @required pageSize,
-      @required pageFuture,
+      pageSize,
+      pageFuture,
       loadingBuilder,
       retryBuilder,
       showRetry: true,
@@ -408,6 +626,7 @@ class PagewiseListView extends Pagewise {
       : super(
             pageSize: pageSize,
             pageFuture: pageFuture,
+            controller: pageLoadController,
             key: key,
             loadingBuilder: loadingBuilder,
             retryBuilder: retryBuilder,
@@ -452,14 +671,15 @@ class PagewiseGridView extends Pagewise {
       primary,
       shrinkWrap: false,
       controller,
+      pageLoadController,
       addAutomaticKeepAlives: true,
       scrollDirection: Axis.vertical,
       addRepaintBoundaries: true,
       cacheExtent,
       physics,
       reverse: false,
-      @required pageSize,
-      @required pageFuture,
+      pageSize,
+      pageFuture,
       loadingBuilder,
       retryBuilder,
       showRetry: true,
@@ -468,6 +688,7 @@ class PagewiseGridView extends Pagewise {
       : super(
             pageSize: pageSize,
             pageFuture: pageFuture,
+            controller: pageLoadController,
             key: key,
             loadingBuilder: loadingBuilder,
             retryBuilder: retryBuilder,
@@ -516,14 +737,15 @@ class PagewiseGridView extends Pagewise {
       primary,
       shrinkWrap: false,
       controller,
+      pageLoadController,
       addAutomaticKeepAlives: true,
       scrollDirection: Axis.vertical,
       addRepaintBoundaries: true,
       cacheExtent,
       physics,
       reverse: false,
-      @required pageSize,
-      @required pageFuture,
+      pageSize,
+      pageFuture,
       loadingBuilder,
       retryBuilder,
       showRetry: true,
@@ -532,6 +754,7 @@ class PagewiseGridView extends Pagewise {
       : super(
             pageSize: pageSize,
             pageFuture: pageFuture,
+            controller: pageLoadController,
             key: key,
             loadingBuilder: loadingBuilder,
             retryBuilder: retryBuilder,

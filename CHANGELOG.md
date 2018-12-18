@@ -41,3 +41,7 @@
 ## 1.0.0 - 16/12/2018
 
 * Re-architect the library for more efficiency and ease of use.
+
+## 1.1.0 - 18/12/2018
+
+* Implement controller pattern for more control and visibility over page loading
