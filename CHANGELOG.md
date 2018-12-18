@@ -45,3 +45,4 @@
 ## 1.1.0 - 18/12/2018
 
 * Implement controller pattern for more control and visibility over page loading
+* Provide support for slivers (PagewiseSliverList and PagewiseSliverGrid)
