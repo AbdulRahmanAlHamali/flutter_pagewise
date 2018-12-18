@@ -77,13 +77,20 @@ must not return more values than mentioned in the `pageSize` parameter.
 ## Customizing the widget:
 In addition to the required parameters, Pagewise provides you with
 optional parameters to customize the widget. You have `loadingBuilder`,
-`errorBuilder`, and `retryBuilder` to customize the widgets that show
-on loading, error, and retry respectively.
+`errorBuilder`, `noItemsFoundBuilder`, and `retryBuilder` to customize the widgets that show
+on loading, error, no found items and retry respectively.
 
 The `loadingBuilder` can be used as follows:
 ```dart
 loadingBuilder: (context) {
   return Text('Loading...');
+}
+```
+
+The `noItemsFoundBuilder` can be used as follows:
+```dart
+noItemsFoundBuilder: (context) {
+  return Text('No Items Found');
 }
 ```
 
@@ -150,7 +157,7 @@ Widget build(BuildContext context) {
 
 Another use case for creating the controller yourself is if you want to
 listen to the state of Pagewise and act accordingly.
-For example, you might want to show a specific widget when the list is empty
+For example, you might want to show a snackbar when we reach the end of the list
 In that case, you could do:
 ```dart
 final _pageLoadController = PagewiseLoadController(
@@ -158,29 +165,18 @@ final _pageLoadController = PagewiseLoadController(
   pageFuture: BackendService.getPage
 );
 
-bool _empty = false;
 @override
 void initState() {
   super.initState();
   this._pageLoadController.addListener(() {
-    if (this._pageLoadController.noItemsFound) {
-      setState(() {
-        this._empty = this._pageLoadController.noItemsFound;
-      });
+    if (!this._pageLoadController.hasMoreItems) {
+      Scaffold.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No More Items!')
+        )
+      );
     }
   });
-}
-```
-
-And then in your `build` function you do:
-```dart
-@override
-Widget build(context) {
-  if (this._empty) {
-    return Text('NO ITEMS FOUND');
-  }
-  
-  // return ...;
 }
 ```
 
