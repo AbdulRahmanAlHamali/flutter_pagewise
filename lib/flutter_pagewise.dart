@@ -27,7 +27,7 @@
 /// ```
 ///
 /// ## Using the library
-/// The library provides two main widgets:
+/// The library provides the following widgets:
 ///  * [PagewiseGridView]: A pagewise implementation of [GridView](https://docs.flutter.io/flutter/widgets/GridView-class.html). It could be
 ///  used as follows:
 ///  ```dart
@@ -61,6 +61,8 @@
 ///    }
 ///  );
 ///  ```
+/// * [PagewiseSliverGrid]: A pagewise implementation of [SliverGrid](https://docs.flutter.io/flutter/widgets/SliverGrid-class.html). It could be used similar to [PagewiseGridView] for cases where a sliver is needed.
+/// * [PagewiseSliverList]: A pagewise implementation of [SliverList](https://docs.flutter.io/flutter/widgets/SliverList-class.html). It could be used similar to [PagewiseListView] for cases where a sliver is needed.
 ///
 /// The classes provide all the properties of `ListViews` and
 /// `GridViews`. In addition, you must provide the [Pagewise.itemBuilder], which
@@ -381,6 +383,8 @@ class PagewiseState extends State<Pagewise> {
   }
 
   Widget _itemBuilder(BuildContext context, int index) {
+    if (index > this._effectiveController.loadedItems.length) return null;
+
     if (index == this._effectiveController.loadedItems.length) {
       if (this._effectiveController.error != null) {
         if (widget.showRetry) {
@@ -662,7 +666,7 @@ class PagewiseGridView extends Pagewise {
   PagewiseGridView.count(
       {Key key,
       padding,
-      crossAxisCount,
+      @required crossAxisCount,
       childAspectRatio,
       crossAxisSpacing,
       mainAxisSpacing,
@@ -784,5 +788,159 @@ class PagewiseGridView extends Pagewise {
                           itemCount: state._itemCount),
                   itemCount: state._itemCount,
                   itemBuilder: state._itemBuilder);
+            });
+}
+
+int _kDefaultSemanticIndexCallback(Widget _, int localIndex) => localIndex;
+
+class PagewiseSliverList extends Pagewise {
+  /// Creates a Pagewise SliverList.
+  ///
+  /// All the properties are those of normal [SliverList](https://docs.flutter.io/flutter/widgets/SliverList-class.html)
+  /// except [pageSize], [pageFuture], [loadingBuilder], [retryBuilder],
+  /// [showRetry], [itemBuilder] and [errorBuilder]
+  PagewiseSliverList(
+      {Key key,
+      addSemanticIndexes = true,
+      addAutomaticKeepAlives: true,
+      addRepaintBoundaries: true,
+      semanticIndexCallback = _kDefaultSemanticIndexCallback,
+      semanticIndexOffset = 0,
+      pageLoadController,
+      pageSize,
+      pageFuture,
+      loadingBuilder,
+      retryBuilder,
+      showRetry: true,
+      @required itemBuilder,
+      errorBuilder})
+      : super(
+            pageSize: pageSize,
+            pageFuture: pageFuture,
+            controller: pageLoadController,
+            key: key,
+            loadingBuilder: loadingBuilder,
+            retryBuilder: retryBuilder,
+            showRetry: showRetry,
+            itemBuilder: itemBuilder,
+            errorBuilder: errorBuilder,
+            builder: (state) {
+              return SliverList(
+                delegate: SliverChildBuilderDelegate(state._itemBuilder,
+                    addAutomaticKeepAlives: addAutomaticKeepAlives,
+                    addRepaintBoundaries: addRepaintBoundaries,
+                    addSemanticIndexes: addSemanticIndexes,
+                    semanticIndexCallback: semanticIndexCallback,
+                    semanticIndexOffset: semanticIndexOffset,
+                    childCount: state._itemCount),
+              );
+            });
+}
+
+class PagewiseSliverGrid extends Pagewise {
+  /// Creates a Pagewise SliverGrid with a crossAxisCount.
+  ///
+  /// All the properties are those of normal [SliverGrid](https://docs.flutter.io/flutter/widgets/SliverGrid-class.html)
+  /// except [pageSize], [pageFuture], [loadingBuilder], [retryBuilder],
+  /// [showRetry], [itemBuilder] and [errorBuilder]
+  PagewiseSliverGrid.count(
+      {Key key,
+      addSemanticIndexes = true,
+      addAutomaticKeepAlives: true,
+      addRepaintBoundaries: true,
+      semanticIndexCallback = _kDefaultSemanticIndexCallback,
+      semanticIndexOffset = 0,
+      @required crossAxisCount,
+      childAspectRatio,
+      crossAxisSpacing,
+      mainAxisSpacing,
+      pageLoadController,
+      pageSize,
+      pageFuture,
+      loadingBuilder,
+      retryBuilder,
+      showRetry: true,
+      @required itemBuilder,
+      errorBuilder})
+      : super(
+            pageSize: pageSize,
+            pageFuture: pageFuture,
+            controller: pageLoadController,
+            key: key,
+            loadingBuilder: loadingBuilder,
+            retryBuilder: retryBuilder,
+            showRetry: showRetry,
+            itemBuilder: itemBuilder,
+            errorBuilder: errorBuilder,
+            builder: (state) {
+              return SliverGrid(
+                delegate: SliverChildBuilderDelegate(state._itemBuilder,
+                    addAutomaticKeepAlives: addAutomaticKeepAlives,
+                    addRepaintBoundaries: addRepaintBoundaries,
+                    addSemanticIndexes: addSemanticIndexes,
+                    semanticIndexCallback: semanticIndexCallback,
+                    semanticIndexOffset: semanticIndexOffset,
+                    childCount: state._itemCount),
+                gridDelegate:
+                    SliverGridDelegateWithFixedCrossAxisCountAndLoading(
+                        crossAxisCount: crossAxisCount,
+                        childAspectRatio: childAspectRatio,
+                        crossAxisSpacing: crossAxisSpacing,
+                        mainAxisSpacing: mainAxisSpacing,
+                        itemCount: state._itemCount),
+              );
+            });
+
+  /// Creates a Pagewise SliverGrid with a maxCrossAxisExtent.
+  ///
+  /// All the properties are those of normal [SliverGrid](https://docs.flutter.io/flutter/widgets/SliverGrid-class.html)
+  /// except [pageSize], [pageFuture], [loadingBuilder], [retryBuilder],
+  /// [showRetry], [itemBuilder] and [errorBuilder]
+  PagewiseSliverGrid.extent(
+      {Key key,
+      addSemanticIndexes = true,
+      addAutomaticKeepAlives: true,
+      addRepaintBoundaries: true,
+      semanticIndexCallback = _kDefaultSemanticIndexCallback,
+      semanticIndexOffset = 0,
+      @required maxCrossAxisExtent,
+      childAspectRatio,
+      crossAxisSpacing,
+      mainAxisSpacing,
+      pageLoadController,
+      pageSize,
+      pageFuture,
+      loadingBuilder,
+      retryBuilder,
+      showRetry: true,
+      @required itemBuilder,
+      errorBuilder})
+      : super(
+            pageSize: pageSize,
+            pageFuture: pageFuture,
+            controller: pageLoadController,
+            key: key,
+            loadingBuilder: loadingBuilder,
+            retryBuilder: retryBuilder,
+            showRetry: showRetry,
+            itemBuilder: itemBuilder,
+            errorBuilder: errorBuilder,
+            builder: (state) {
+              return SliverGrid(
+                delegate: SliverChildBuilderDelegate(state._itemBuilder,
+                    addAutomaticKeepAlives: addAutomaticKeepAlives,
+                    addRepaintBoundaries: addRepaintBoundaries,
+                    addSemanticIndexes: addSemanticIndexes,
+                    semanticIndexCallback: semanticIndexCallback,
+                    semanticIndexOffset: semanticIndexOffset,
+                    childCount: state._itemCount),
+                gridDelegate:
+                    SliverGridDelegateWithMaxCrossAxisExtentAndLoading(
+                        maxCrossAxisExtent: maxCrossAxisExtent,
+                        childAspectRatio: childAspectRatio,
+                        crossAxisSpacing: crossAxisSpacing,
+                        mainAxisSpacing: mainAxisSpacing,
+                        itemCount: state._itemCount),
+              );
             });
 }

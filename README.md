@@ -29,7 +29,7 @@ import 'package:flutter_pagewise/flutter_pagewise.dart';
 ```
 
 ## Using the library
-The library provides two main widgets:
+The library provides the following widgets:
  * `PagewiseGridView`: A pagewise implementation of [GridView](https://docs.flutter.io/flutter/widgets/GridView-class.html). It could be
  used as follows:
  ```dart
@@ -63,6 +63,8 @@ The library provides two main widgets:
    }
  );
  ```
+ * `PagewiseSliverGrid`: A pagewise implementation of [SliverGrid](https://docs.flutter.io/flutter/widgets/SliverGrid-class.html). It could be used similar to `PagewiseGridView` for cases where a sliver is needed.
+ * `PagewiseSliverList`: A pagewise implementation of [SliverList](https://docs.flutter.io/flutter/widgets/SliverList-class.html). It could be used similar to `PagewiseListView` for cases where a sliver is needed.
 
 The classes provide all the properties of `ListViews` and
 `GridViews`. In addition, you must provide the `itemBuilder`, which

@@ -106,6 +106,94 @@ class PagewiseListViewExample extends StatelessWidget {
   }
 }
 
+/// Not used, but you can use it to test it if needed
+class PagewiseSliverListExample extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(slivers: [
+      SliverAppBar(
+        title: Text('This is a sliver app bar'),
+        snap: true,
+        floating: true,
+      ),
+      PagewiseSliverList(
+          pageSize: 6,
+          itemBuilder: this._itemBuilder,
+          pageFuture: BackendService.getPage)
+    ]);
+  }
+
+  Widget _itemBuilder(context, entry, _) {
+    return ListTile(
+      leading: Icon(
+        Icons.shopping_cart,
+        color: Colors.brown[200],
+      ),
+      title: Text(entry['name']),
+      subtitle: Text('\$' + entry['price'].toString()),
+    );
+  }
+}
+
+/// Not used, but you can use it to test it if needed
+class PagewiseSliverGridExample extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      slivers: <Widget>[
+        SliverAppBar(
+          title: Text('This is a sliver app bar'),
+          floating: true,
+          snap: true,
+        ),
+        PagewiseSliverGrid.count(
+          pageSize: 6,
+          crossAxisCount: 3,
+          mainAxisSpacing: 8.0,
+          crossAxisSpacing: 8.0,
+          childAspectRatio: 0.555,
+          itemBuilder: this._itemBuilder,
+          pageFuture: BackendService.getPage,
+        )
+      ],
+    );
+  }
+
+  Widget _itemBuilder(context, entry, _) {
+    return Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey[600]),
+        ),
+        child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      image: DecorationImage(
+                          image: AssetImage('assets/images/flutter.png'),
+                          fit: BoxFit.fill)),
+                ),
+              ),
+              SizedBox(height: 8.0),
+              Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text(entry['name'], style: TextStyle(fontSize: 18.0))),
+              SizedBox(height: 8.0),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text(
+                  '\$' + entry['price'].toString(),
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              SizedBox(height: 8.0)
+            ]));
+  }
+}
+
 class BackendService {
   static Future<List> getPage(pageIndex) async {
     await Future.delayed(Duration(seconds: 1));
