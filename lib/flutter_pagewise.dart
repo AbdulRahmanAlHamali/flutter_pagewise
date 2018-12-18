@@ -7,6 +7,7 @@ typedef Widget ItemBuilder<T>(BuildContext context, T entry, int index);
 typedef Future<List> PageFuture(int pageIndex);
 typedef Widget ErrorBuilder(BuildContext context, Object error);
 typedef Widget LoadingBuilder(BuildContext context);
+typedef Widget NoItemsFoundBuilder(BuildContext context);
 typedef Widget RetryBuilder(BuildContext context, RetryCallback retryCallback);
 typedef void RetryCallback();
 typedef PagewiseBuilder(PagewiseState state);
@@ -92,6 +93,18 @@ abstract class Pagewise extends StatefulWidget {
   /// If not specified, a simple retry button will be shown
   final RetryBuilder retryBuilder;
 
+  /// Called when no items are found
+  ///
+  /// It is expected to return a widget that gives the user the idea that no
+  /// items exist in the list
+  /// For example:
+  ///  ```dart
+  ///  (BuildContext context) {
+  ///    return Text('No Items Found!');
+  ///  }
+  ///  ```
+  final NoItemsFoundBuilder noItemsFoundBuilder;
+
   /// Called to build each entry in the view.
   ///
   /// It is called for each of the entries fetched by [pageFuture] and provided
@@ -144,6 +157,7 @@ abstract class Pagewise extends StatefulWidget {
       this.controller,
       this.loadingBuilder,
       this.retryBuilder,
+      this.noItemsFoundBuilder,
       this.showRetry: true,
       @required this.itemBuilder,
       this.errorBuilder,
@@ -208,6 +222,11 @@ class PagewiseState extends State<Pagewise> {
       this._controller = null;
       this._effectiveController.addListener(this._controllerListener);
       this._effectiveController.init();
+    } else if (widget.controller != null &&
+        (widget.controller != oldWidget.controller)) {
+      oldWidget.controller.removeListener(this._controllerListener);
+      this._effectiveController.addListener(this._controllerListener);
+      this._effectiveController.init();
     }
   }
 
@@ -222,6 +241,10 @@ class PagewiseState extends State<Pagewise> {
     if (index > this._effectiveController.loadedItems.length) return null;
 
     if (index == this._effectiveController.loadedItems.length) {
+      if (this._effectiveController.noItemsFound) {
+        return this._getNoItemsFoundWidget();
+      }
+
       if (this._effectiveController.error != null) {
         if (widget.showRetry) {
           return this._getRetryWidget();
@@ -247,6 +270,13 @@ class PagewiseState extends State<Pagewise> {
         child: widget.loadingBuilder != null
             ? widget.loadingBuilder(context)
             : CircularProgressIndicator());
+  }
+
+  Widget _getNoItemsFoundWidget() {
+    return this._getStandardContainer(
+        child: widget.noItemsFoundBuilder != null
+            ? widget.noItemsFoundBuilder(context)
+            : Container());
   }
 
   Widget _getErrorWidget(Object error) {
@@ -438,7 +468,7 @@ class PagewiseListView extends Pagewise {
   /// Creates a Pagewise ListView.
   ///
   /// All the properties are those of normal [ListViews](https://docs.flutter.io/flutter/widgets/ListView-class.html)
-  /// except [pageSize], [pageFuture], [loadingBuilder], [retryBuilder],
+  /// except [pageSize], [pageFuture], [loadingBuilder], [noItemsFoundBuilder], [retryBuilder],
   /// [showRetry], [itemBuilder] and [errorBuilder]
   PagewiseListView(
       {Key key,
@@ -460,6 +490,7 @@ class PagewiseListView extends Pagewise {
       pageFuture,
       loadingBuilder,
       retryBuilder,
+      noItemsFoundBuilder,
       showRetry: true,
       @required itemBuilder,
       errorBuilder})
@@ -473,6 +504,7 @@ class PagewiseListView extends Pagewise {
             showRetry: showRetry,
             itemBuilder: itemBuilder,
             errorBuilder: errorBuilder,
+            noItemsFoundBuilder: noItemsFoundBuilder,
             builder: (state) {
               return ListView.builder(
                   itemExtent: itemExtent,
@@ -497,7 +529,7 @@ class PagewiseGridView extends Pagewise {
   /// Creates a Pagewise GridView with a crossAxisCount.
   ///
   /// All the properties are those of normal [GridViews](https://docs.flutter.io/flutter/widgets/GridView-class.html)
-  /// except [pageSize], [pageFuture], [loadingBuilder], [retryBuilder],
+  /// except [pageSize], [pageFuture], [loadingBuilder], [noItemsFoundBuilder], [retryBuilder],
   /// [showRetry], [itemBuilder] and [errorBuilder]
   PagewiseGridView.count(
       {Key key,
@@ -522,6 +554,7 @@ class PagewiseGridView extends Pagewise {
       pageFuture,
       loadingBuilder,
       retryBuilder,
+      noItemsFoundBuilder,
       showRetry: true,
       @required itemBuilder,
       errorBuilder})
@@ -535,6 +568,7 @@ class PagewiseGridView extends Pagewise {
             showRetry: showRetry,
             itemBuilder: itemBuilder,
             errorBuilder: errorBuilder,
+            noItemsFoundBuilder: noItemsFoundBuilder,
             builder: (state) {
               return GridView.builder(
                   reverse: reverse,
@@ -563,7 +597,7 @@ class PagewiseGridView extends Pagewise {
   /// Creates a Pagewise GridView with a maxCrossAxisExtent.
   ///
   /// All the properties are those of normal [GridViews](https://docs.flutter.io/flutter/widgets/GridView-class.html)
-  /// except [pageSize], [pageFuture], [loadingBuilder], [retryBuilder],
+  /// except [pageSize], [pageFuture], [loadingBuilder], [noItemsFoundBuilder], [retryBuilder],
   /// [showRetry], [itemBuilder] and [errorBuilder]
   PagewiseGridView.extent(
       {Key key,
@@ -588,6 +622,7 @@ class PagewiseGridView extends Pagewise {
       pageFuture,
       loadingBuilder,
       retryBuilder,
+      noItemsFoundBuilder,
       showRetry: true,
       @required itemBuilder,
       errorBuilder})
@@ -601,6 +636,7 @@ class PagewiseGridView extends Pagewise {
             showRetry: showRetry,
             itemBuilder: itemBuilder,
             errorBuilder: errorBuilder,
+            noItemsFoundBuilder: noItemsFoundBuilder,
             builder: (state) {
               return GridView.builder(
                   reverse: reverse,
@@ -633,7 +669,7 @@ class PagewiseSliverList extends Pagewise {
   /// Creates a Pagewise SliverList.
   ///
   /// All the properties are those of normal [SliverList](https://docs.flutter.io/flutter/widgets/SliverList-class.html)
-  /// except [pageSize], [pageFuture], [loadingBuilder], [retryBuilder],
+  /// except [pageSize], [pageFuture], [loadingBuilder], [noItemsFoundBuilder], [retryBuilder],
   /// [showRetry], [itemBuilder] and [errorBuilder]
   PagewiseSliverList(
       {Key key,
@@ -647,6 +683,7 @@ class PagewiseSliverList extends Pagewise {
       pageFuture,
       loadingBuilder,
       retryBuilder,
+      noItemsFoundBuilder,
       showRetry: true,
       @required itemBuilder,
       errorBuilder})
@@ -660,6 +697,7 @@ class PagewiseSliverList extends Pagewise {
             showRetry: showRetry,
             itemBuilder: itemBuilder,
             errorBuilder: errorBuilder,
+            noItemsFoundBuilder: noItemsFoundBuilder,
             builder: (state) {
               return SliverList(
                 delegate: SliverChildBuilderDelegate(state._itemBuilder,
@@ -677,7 +715,7 @@ class PagewiseSliverGrid extends Pagewise {
   /// Creates a Pagewise SliverGrid with a crossAxisCount.
   ///
   /// All the properties are those of normal [SliverGrid](https://docs.flutter.io/flutter/widgets/SliverGrid-class.html)
-  /// except [pageSize], [pageFuture], [loadingBuilder], [retryBuilder],
+  /// except [pageSize], [pageFuture], [loadingBuilder], [noItemsFoundBuilder], [retryBuilder],
   /// [showRetry], [itemBuilder] and [errorBuilder]
   PagewiseSliverGrid.count(
       {Key key,
@@ -695,6 +733,7 @@ class PagewiseSliverGrid extends Pagewise {
       pageFuture,
       loadingBuilder,
       retryBuilder,
+      noItemsFoundBuilder,
       showRetry: true,
       @required itemBuilder,
       errorBuilder})
@@ -708,6 +747,7 @@ class PagewiseSliverGrid extends Pagewise {
             showRetry: showRetry,
             itemBuilder: itemBuilder,
             errorBuilder: errorBuilder,
+            noItemsFoundBuilder: noItemsFoundBuilder,
             builder: (state) {
               return SliverGrid(
                 delegate: SliverChildBuilderDelegate(state._itemBuilder,
@@ -730,7 +770,7 @@ class PagewiseSliverGrid extends Pagewise {
   /// Creates a Pagewise SliverGrid with a maxCrossAxisExtent.
   ///
   /// All the properties are those of normal [SliverGrid](https://docs.flutter.io/flutter/widgets/SliverGrid-class.html)
-  /// except [pageSize], [pageFuture], [loadingBuilder], [retryBuilder],
+  /// except [pageSize], [pageFuture], [loadingBuilder], [noItemsFoundBuilder], [retryBuilder],
   /// [showRetry], [itemBuilder] and [errorBuilder]
   PagewiseSliverGrid.extent(
       {Key key,
@@ -748,6 +788,7 @@ class PagewiseSliverGrid extends Pagewise {
       pageFuture,
       loadingBuilder,
       retryBuilder,
+      noItemsFoundBuilder,
       showRetry: true,
       @required itemBuilder,
       errorBuilder})
@@ -757,6 +798,7 @@ class PagewiseSliverGrid extends Pagewise {
             controller: pageLoadController,
             key: key,
             loadingBuilder: loadingBuilder,
+            noItemsFoundBuilder: noItemsFoundBuilder,
             retryBuilder: retryBuilder,
             showRetry: showRetry,
             itemBuilder: itemBuilder,
