@@ -193,23 +193,6 @@ class PagewiseState extends State<Pagewise> {
     this._effectiveController.removeListener(this._controllerListener);
   }
 
-  @override
-  void didUpdateWidget(Pagewise oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.controller == null && oldWidget.controller != null){
-      oldWidget.controller.removeListener(this._controllerListener);
-      this._controller = PagewiseLoadController(
-          pageFuture: oldWidget.controller.pageFuture, pageSize: oldWidget.controller.pageSize);
-      this._effectiveController.addListener(this._controllerListener);
-      this._effectiveController.init();
-    } else if (widget.controller != null && oldWidget.controller == null) {
-      this._controller.removeListener(this._controllerListener);
-      this._controller = null;
-      this._effectiveController.addListener(this._controllerListener);
-      this._effectiveController.init();
-    }
-  }
-
   int get _itemCount => this._effectiveController.loadedItems.length + 1;
 
   @override
