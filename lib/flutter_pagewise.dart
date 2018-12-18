@@ -208,6 +208,11 @@ class PagewiseState extends State<Pagewise> {
       this._controller = null;
       this._effectiveController.addListener(this._controllerListener);
       this._effectiveController.init();
+    } else if (widget.controller != null &&
+        (widget.controller != oldWidget.controller)) {
+      oldWidget.controller.removeListener(this._controllerListener);
+      this._effectiveController.addListener(this._controllerListener);
+      this._effectiveController.init();
     }
   }
 
