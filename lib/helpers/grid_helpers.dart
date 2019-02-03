@@ -99,14 +99,8 @@ class SliverGridRegularTileLayoutAndLoading
   @override
   SliverGridGeometry getGeometryForChildIndex(int index) {
     if (index == this.itemCount - 1) {
-      int displayIndex = index;
-      if (index.remainder(this.crossAxisCount) != 0) {
-        displayIndex = index +
-            (this.crossAxisCount - index.remainder(this.crossAxisCount));
-      }
       return SliverGridGeometry(
-          scrollOffset:
-              (displayIndex ~/ this.crossAxisCount) * this.mainAxisStride,
+          scrollOffset: (index ~/ this.crossAxisCount) * this.mainAxisStride,
           crossAxisOffset: 0.0,
           mainAxisExtent: this.childMainAxisExtent,
           crossAxisExtent: this.fullCrossAccessExtent);
