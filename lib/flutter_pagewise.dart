@@ -438,7 +438,7 @@ class PagewiseLoadController<T> extends ChangeNotifier {
   }
 
   /// Resets all the information of the controller
-  reset() {
+  Future<void> reset() {
     this._appendedItems = [];
     this._loadedItems = [];
     this._numberOfLoadedPages = 0;
