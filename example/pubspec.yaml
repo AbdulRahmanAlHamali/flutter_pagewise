@@ -10,6 +10,7 @@ dependencies:
   cupertino_icons: ^0.1.2
   flutter_pagewise:
     path: ../
+  http:
 
 dev_dependencies:
   flutter_test:

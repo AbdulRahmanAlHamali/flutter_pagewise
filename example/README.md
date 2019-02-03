@@ -1,8 +1,15 @@
-# example
+The example in [lib/main.dart](./lib/main.dart):
 
-Example of using the pagewise package
+uses Pagewise to display paginated data in 4 different ways:
+1. `ListView`
+2. `GridView`
+3. `SliverListView`
+4. `SliverGridView`
 
-## Getting Started
+All the views fetch their data from [JSON placeholder](http://jsonplaceholder.typicode.com/),
+an online service that provides dummy JSON data for testing. The `ListViews` fetch the posts from
+the service, while the `GridViews` fetch the images.
 
-For help getting started with Flutter, view our online
-[documentation](https://flutter.io/).
+The service allows us to specify a `start` and `limit` parameters, which allows us to effectively
+achieve pagination. The `start` parameter specifies the first element to fetch, while the `limit`
+specifies the number of elements to fetch, that is, the page size.
