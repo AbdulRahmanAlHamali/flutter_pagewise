@@ -238,9 +238,15 @@ class PagewiseState extends State<Pagewise> {
   }
 
   Widget _itemBuilder(BuildContext context, int index) {
-    if (index > this._effectiveController.loadedItems.length) return null;
+    // The total number of widgets, is the number of loaded items, plus the
+    // number of items that we appended to make all pages the same size,
+    // plus 1 for the loader
+    final total = this._effectiveController.loadedItems.length
+        + this._effectiveController._appendedItems.length + 1;
 
-    if (index == this._effectiveController.loadedItems.length) {
+    if (index >= total) return null;
+
+    if (index == total - 1) {
       if (this._effectiveController.noItemsFound) {
         return this._getNoItemsFoundWidget();
       }
@@ -260,6 +266,12 @@ class PagewiseState extends State<Pagewise> {
         return Container();
       }
     } else {
+      if (index >= this._effectiveController.loadedItems.length) {
+        // this means that the function is asking for an element from the
+        // appended items, so we return an empty container
+        return Container();
+      }
+      // Otherwise, we return the actual item
       return widget.itemBuilder(
           context, this._effectiveController.loadedItems[index], index);
     }
@@ -384,6 +396,7 @@ class PagewiseState extends State<Pagewise> {
 /// ```
 class PagewiseLoadController<T> extends ChangeNotifier {
   List<T> _loadedItems;
+  List _appendedItems;
   int _numberOfLoadedPages;
   bool _hasMoreItems;
   Object _error;
@@ -426,6 +439,7 @@ class PagewiseLoadController<T> extends ChangeNotifier {
 
   /// Resets all the information of the controller
   reset() {
+    this._appendedItems = [];
     this._loadedItems = [];
     this._numberOfLoadedPages = 0;
     this._hasMoreItems = true;
@@ -447,6 +461,14 @@ class PagewiseLoadController<T> extends ChangeNotifier {
 
     if (page.length > this.pageSize) {
       throw ('Page length (${page.length}) is greater than the maximum size (${this.pageSize})');
+    }
+
+    if (page.length > 0 && page.length < this.pageSize) {
+      // This should only happen when loading the last page.
+      // In that case, we append the last page with a few items to make its size
+      // similar to normal pages. This is useful especially with GridView,
+      // because we want the loading to show on a new line on its own
+      this._appendedItems = List.generate(this.pageSize - page.length, (_) => {});
     }
 
     if (page.length == 0) {
