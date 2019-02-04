@@ -144,7 +144,7 @@ abstract class Pagewise extends StatefulWidget {
   /// You don't have to provide this parameter unless you want to control or
   /// listen to the data that Pagewise fetches. Review the documentation of
   /// [PagewiseLoadController] for more details
-  final PagewiseLoadController controller;
+  final PagewiseLoadController pageLoadController;
 
   /// Creates a pagewise widget.
   ///
@@ -154,7 +154,7 @@ abstract class Pagewise extends StatefulWidget {
       {this.pageSize,
       this.pageFuture,
       Key key,
-      this.controller,
+      this.pageLoadController,
       this.loadingBuilder,
       this.retryBuilder,
       this.noItemsFoundBuilder,
@@ -163,8 +163,8 @@ abstract class Pagewise extends StatefulWidget {
       this.errorBuilder,
       @required this.builder})
       : assert(showRetry != null),
-        assert((controller == null && pageSize != null && pageFuture != null) ||
-            (controller != null && pageSize == null && pageFuture == null)),
+        assert((pageLoadController == null && pageSize != null && pageFuture != null) ||
+            (pageLoadController != null && pageSize == null && pageFuture == null)),
         assert(showRetry == false || errorBuilder == null,
             'Cannot specify showRetry and errorBuilder at the same time'),
         assert(showRetry == true || retryBuilder == null,
@@ -179,7 +179,7 @@ class PagewiseState extends State<Pagewise> {
   PagewiseLoadController _controller;
 
   PagewiseLoadController get _effectiveController =>
-      widget.controller ?? this._controller;
+      widget.pageLoadController ?? this._controller;
 
   VoidCallback _controllerListener;
 
@@ -187,7 +187,7 @@ class PagewiseState extends State<Pagewise> {
   void initState() {
     super.initState();
 
-    if (widget.controller == null) {
+    if (widget.pageLoadController == null) {
       this._controller = PagewiseLoadController(
           pageFuture: widget.pageFuture, pageSize: widget.pageSize);
     }
@@ -210,21 +210,21 @@ class PagewiseState extends State<Pagewise> {
   @override
   void didUpdateWidget(Pagewise oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.controller == null && oldWidget.controller != null) {
-      oldWidget.controller.removeListener(this._controllerListener);
+    if (widget.pageLoadController == null && oldWidget.pageLoadController != null) {
+      oldWidget.pageLoadController.removeListener(this._controllerListener);
       this._controller = PagewiseLoadController(
-          pageFuture: oldWidget.controller.pageFuture,
-          pageSize: oldWidget.controller.pageSize);
+          pageFuture: oldWidget.pageLoadController.pageFuture,
+          pageSize: oldWidget.pageLoadController.pageSize);
       this._effectiveController.addListener(this._controllerListener);
       this._effectiveController.init();
-    } else if (widget.controller != null && oldWidget.controller == null) {
+    } else if (widget.pageLoadController != null && oldWidget.pageLoadController == null) {
       this._controller.removeListener(this._controllerListener);
       this._controller = null;
       this._effectiveController.addListener(this._controllerListener);
       this._effectiveController.init();
-    } else if (widget.controller != null &&
-        (widget.controller != oldWidget.controller)) {
-      oldWidget.controller.removeListener(this._controllerListener);
+    } else if (widget.pageLoadController != null &&
+        (widget.pageLoadController != oldWidget.pageLoadController)) {
+      oldWidget.pageLoadController.removeListener(this._controllerListener);
       this._effectiveController.addListener(this._controllerListener);
       this._effectiveController.init();
     }
@@ -433,12 +433,12 @@ class PagewiseLoadController<T> extends ChangeNotifier {
       this._loadedItems.length == 0 && this.hasMoreItems == false;
 
   /// Called to initialize the controller. Same as [reset]
-  init() {
+  void init() {
     this.reset();
   }
 
   /// Resets all the information of the controller
-  Future<void> reset() {
+  void reset() {
     this._appendedItems = [];
     this._loadedItems = [];
     this._numberOfLoadedPages = 0;
@@ -480,7 +480,7 @@ class PagewiseLoadController<T> extends ChangeNotifier {
   }
 
   /// Attempts to retry in case an error occurred
-  retry() {
+  void retry() {
     this._error = null;
     this.notifyListeners();
   }
@@ -489,37 +489,36 @@ class PagewiseLoadController<T> extends ChangeNotifier {
 class PagewiseListView extends Pagewise {
   /// Creates a Pagewise ListView.
   ///
-  /// All the properties are those of normal [ListViews](https://docs.flutter.io/flutter/widgets/ListView-class.html)
-  /// except [pageSize], [pageFuture], [loadingBuilder], [noItemsFoundBuilder], [retryBuilder],
-  /// [showRetry], [itemBuilder] and [errorBuilder]
+  /// All the properties are either those documented for normal [ListViews](https://docs.flutter.io/flutter/widgets/ListView-class.html),
+  /// or those inherited from [Pagewise]
   PagewiseListView(
       {Key key,
-      padding,
-      primary,
-      addSemanticIndexes = true,
-      semanticChildCount,
-      shrinkWrap: false,
-      controller,
-      pageLoadController,
-      itemExtent,
-      addAutomaticKeepAlives: true,
-      scrollDirection: Axis.vertical,
-      addRepaintBoundaries: true,
-      cacheExtent,
-      physics,
-      reverse: false,
-      pageSize,
-      pageFuture,
-      loadingBuilder,
-      retryBuilder,
-      noItemsFoundBuilder,
-      showRetry: true,
-      @required itemBuilder,
-      errorBuilder})
+      EdgeInsetsGeometry padding,
+      bool primary,
+      bool addSemanticIndexes = true,
+      int semanticChildCount,
+      bool shrinkWrap: false,
+      ScrollController controller,
+      PagewiseLoadController pageLoadController,
+      double itemExtent,
+      bool addAutomaticKeepAlives: true,
+      Axis scrollDirection: Axis.vertical,
+      bool addRepaintBoundaries: true,
+      double cacheExtent,
+      ScrollPhysics physics,
+      bool reverse: false,
+      int pageSize,
+      PageFuture pageFuture,
+      LoadingBuilder loadingBuilder,
+      RetryBuilder retryBuilder,
+      NoItemsFoundBuilder noItemsFoundBuilder,
+      bool showRetry: true,
+      @required ItemBuilder itemBuilder,
+      ErrorBuilder errorBuilder})
       : super(
             pageSize: pageSize,
             pageFuture: pageFuture,
-            controller: pageLoadController,
+            pageLoadController: pageLoadController,
             key: key,
             loadingBuilder: loadingBuilder,
             retryBuilder: retryBuilder,
@@ -548,42 +547,42 @@ class PagewiseListView extends Pagewise {
 }
 
 class PagewiseGridView extends Pagewise {
+
   /// Creates a Pagewise GridView with a crossAxisCount.
   ///
-  /// All the properties are those of normal [GridViews](https://docs.flutter.io/flutter/widgets/GridView-class.html)
-  /// except [pageSize], [pageFuture], [loadingBuilder], [noItemsFoundBuilder], [retryBuilder],
-  /// [showRetry], [itemBuilder] and [errorBuilder]
+  /// All the properties are either those documented for normal [GridViews](https://docs.flutter.io/flutter/widgets/GridView-class.html)
+  /// or those inherited from [Pagewise]
   PagewiseGridView.count(
       {Key key,
-      padding,
-      @required crossAxisCount,
-      childAspectRatio,
-      crossAxisSpacing,
-      mainAxisSpacing,
-      addSemanticIndexes = true,
-      semanticChildCount,
-      primary,
-      shrinkWrap: false,
-      controller,
-      pageLoadController,
-      addAutomaticKeepAlives: true,
-      scrollDirection: Axis.vertical,
-      addRepaintBoundaries: true,
-      cacheExtent,
-      physics,
-      reverse: false,
-      pageSize,
-      pageFuture,
-      loadingBuilder,
-      retryBuilder,
-      noItemsFoundBuilder,
-      showRetry: true,
-      @required itemBuilder,
-      errorBuilder})
+      EdgeInsetsGeometry padding,
+      @required int crossAxisCount,
+      double childAspectRatio = 1.0,
+      double crossAxisSpacing = 0.0,
+      double mainAxisSpacing = 0.0,
+      bool addSemanticIndexes = true,
+      int semanticChildCount,
+      bool primary,
+      bool shrinkWrap: false,
+      ScrollController controller,
+      PagewiseLoadController pageLoadController,
+      bool addAutomaticKeepAlives: true,
+      Axis scrollDirection: Axis.vertical,
+      bool addRepaintBoundaries: true,
+      double cacheExtent,
+      ScrollPhysics physics,
+      bool reverse: false,
+      int pageSize,
+      PageFuture pageFuture,
+      LoadingBuilder loadingBuilder,
+      RetryBuilder retryBuilder,
+      NoItemsFoundBuilder noItemsFoundBuilder,
+      bool showRetry: true,
+      @required ItemBuilder itemBuilder,
+      ErrorBuilder errorBuilder})
       : super(
             pageSize: pageSize,
             pageFuture: pageFuture,
-            controller: pageLoadController,
+            pageLoadController: pageLoadController,
             key: key,
             loadingBuilder: loadingBuilder,
             retryBuilder: retryBuilder,
@@ -616,42 +615,42 @@ class PagewiseGridView extends Pagewise {
                   itemBuilder: state._itemBuilder);
             });
 
+
   /// Creates a Pagewise GridView with a maxCrossAxisExtent.
   ///
-  /// All the properties are those of normal [GridViews](https://docs.flutter.io/flutter/widgets/GridView-class.html)
-  /// except [pageSize], [pageFuture], [loadingBuilder], [noItemsFoundBuilder], [retryBuilder],
-  /// [showRetry], [itemBuilder] and [errorBuilder]
+  /// All the properties are either those documented for normal [GridViews](https://docs.flutter.io/flutter/widgets/GridView-class.html)
+  /// or those inherited from [Pagewise]
   PagewiseGridView.extent(
       {Key key,
-      padding,
+      EdgeInsetsGeometry padding,
       @required double maxCrossAxisExtent,
-      childAspectRatio,
-      crossAxisSpacing,
-      mainAxisSpacing,
-      addSemanticIndexes = true,
-      semanticChildCount,
-      primary,
-      shrinkWrap: false,
-      controller,
-      pageLoadController,
-      addAutomaticKeepAlives: true,
-      scrollDirection: Axis.vertical,
-      addRepaintBoundaries: true,
-      cacheExtent,
-      physics,
-      reverse: false,
-      pageSize,
-      pageFuture,
-      loadingBuilder,
-      retryBuilder,
-      noItemsFoundBuilder,
-      showRetry: true,
-      @required itemBuilder,
-      errorBuilder})
+      double childAspectRatio = 1.0,
+      double crossAxisSpacing = 0.0,
+      double mainAxisSpacing = 0.0,
+      bool addSemanticIndexes = true,
+      int semanticChildCount,
+      bool primary,
+      bool shrinkWrap: false,
+      ScrollController controller,
+      PagewiseLoadController pageLoadController,
+      bool addAutomaticKeepAlives: true,
+      Axis scrollDirection: Axis.vertical,
+      bool addRepaintBoundaries: true,
+      double cacheExtent,
+      ScrollPhysics physics,
+      bool reverse: false,
+      int pageSize,
+      PageFuture pageFuture,
+      LoadingBuilder loadingBuilder,
+      RetryBuilder retryBuilder,
+      NoItemsFoundBuilder noItemsFoundBuilder,
+      bool showRetry: true,
+      @required ItemBuilder itemBuilder,
+      ErrorBuilder errorBuilder})
       : super(
             pageSize: pageSize,
             pageFuture: pageFuture,
-            controller: pageLoadController,
+            pageLoadController: pageLoadController,
             key: key,
             loadingBuilder: loadingBuilder,
             retryBuilder: retryBuilder,
@@ -690,29 +689,28 @@ int _kDefaultSemanticIndexCallback(Widget _, int localIndex) => localIndex;
 class PagewiseSliverList extends Pagewise {
   /// Creates a Pagewise SliverList.
   ///
-  /// All the properties are those of normal [SliverList](https://docs.flutter.io/flutter/widgets/SliverList-class.html)
-  /// except [pageSize], [pageFuture], [loadingBuilder], [noItemsFoundBuilder], [retryBuilder],
-  /// [showRetry], [itemBuilder] and [errorBuilder]
+  /// All the properties are either those documented for normal [SliverList](https://docs.flutter.io/flutter/widgets/SliverList-class.html)
+  /// or those inherited from [Pagewise]
   PagewiseSliverList(
       {Key key,
-      addSemanticIndexes = true,
-      addAutomaticKeepAlives: true,
-      addRepaintBoundaries: true,
-      semanticIndexCallback = _kDefaultSemanticIndexCallback,
-      semanticIndexOffset = 0,
-      pageLoadController,
-      pageSize,
-      pageFuture,
-      loadingBuilder,
-      retryBuilder,
-      noItemsFoundBuilder,
-      showRetry: true,
-      @required itemBuilder,
-      errorBuilder})
+      bool addSemanticIndexes = true,
+      bool addAutomaticKeepAlives: true,
+      bool addRepaintBoundaries: true,
+      SemanticIndexCallback semanticIndexCallback = _kDefaultSemanticIndexCallback,
+      int semanticIndexOffset = 0,
+      PagewiseLoadController pageLoadController,
+      int pageSize,
+      PageFuture pageFuture,
+      LoadingBuilder loadingBuilder,
+      RetryBuilder retryBuilder,
+      NoItemsFoundBuilder noItemsFoundBuilder,
+      bool showRetry: true,
+      @required ItemBuilder itemBuilder,
+      ErrorBuilder errorBuilder})
       : super(
             pageSize: pageSize,
             pageFuture: pageFuture,
-            controller: pageLoadController,
+            pageLoadController: pageLoadController,
             key: key,
             loadingBuilder: loadingBuilder,
             retryBuilder: retryBuilder,
@@ -736,33 +734,32 @@ class PagewiseSliverList extends Pagewise {
 class PagewiseSliverGrid extends Pagewise {
   /// Creates a Pagewise SliverGrid with a crossAxisCount.
   ///
-  /// All the properties are those of normal [SliverGrid](https://docs.flutter.io/flutter/widgets/SliverGrid-class.html)
-  /// except [pageSize], [pageFuture], [loadingBuilder], [noItemsFoundBuilder], [retryBuilder],
-  /// [showRetry], [itemBuilder] and [errorBuilder]
+  /// All the properties are either those documented for normal [SliverGrid](https://docs.flutter.io/flutter/widgets/SliverGrid-class.html)
+  /// or those inherited from [Pagewise]
   PagewiseSliverGrid.count(
       {Key key,
-      addSemanticIndexes = true,
-      addAutomaticKeepAlives: true,
-      addRepaintBoundaries: true,
-      semanticIndexCallback = _kDefaultSemanticIndexCallback,
-      semanticIndexOffset = 0,
-      @required crossAxisCount,
-      childAspectRatio,
-      crossAxisSpacing,
-      mainAxisSpacing,
-      pageLoadController,
-      pageSize,
-      pageFuture,
-      loadingBuilder,
-      retryBuilder,
-      noItemsFoundBuilder,
-      showRetry: true,
-      @required itemBuilder,
-      errorBuilder})
+      bool addSemanticIndexes = true,
+      bool addAutomaticKeepAlives: true,
+      bool addRepaintBoundaries: true,
+      SemanticIndexCallback semanticIndexCallback = _kDefaultSemanticIndexCallback,
+      int semanticIndexOffset = 0,
+      @required int crossAxisCount,
+      double childAspectRatio = 1.0,
+      double crossAxisSpacing = 0.0,
+      double mainAxisSpacing = 0.0,
+      PagewiseLoadController pageLoadController,
+      int pageSize,
+      PageFuture pageFuture,
+      LoadingBuilder loadingBuilder,
+      RetryBuilder retryBuilder,
+      NoItemsFoundBuilder noItemsFoundBuilder,
+      bool showRetry: true,
+      @required ItemBuilder itemBuilder,
+      ErrorBuilder errorBuilder})
       : super(
             pageSize: pageSize,
             pageFuture: pageFuture,
-            controller: pageLoadController,
+            pageLoadController: pageLoadController,
             key: key,
             loadingBuilder: loadingBuilder,
             retryBuilder: retryBuilder,
@@ -791,33 +788,32 @@ class PagewiseSliverGrid extends Pagewise {
 
   /// Creates a Pagewise SliverGrid with a maxCrossAxisExtent.
   ///
-  /// All the properties are those of normal [SliverGrid](https://docs.flutter.io/flutter/widgets/SliverGrid-class.html)
-  /// except [pageSize], [pageFuture], [loadingBuilder], [noItemsFoundBuilder], [retryBuilder],
-  /// [showRetry], [itemBuilder] and [errorBuilder]
+  /// All the properties are either those documented for normal [SliverGrid](https://docs.flutter.io/flutter/widgets/SliverGrid-class.html)
+  /// or those inherited from [Pagewise]
   PagewiseSliverGrid.extent(
       {Key key,
-      addSemanticIndexes = true,
-      addAutomaticKeepAlives: true,
-      addRepaintBoundaries: true,
-      semanticIndexCallback = _kDefaultSemanticIndexCallback,
-      semanticIndexOffset = 0,
-      @required maxCrossAxisExtent,
-      childAspectRatio,
-      crossAxisSpacing,
-      mainAxisSpacing,
-      pageLoadController,
-      pageSize,
-      pageFuture,
-      loadingBuilder,
-      retryBuilder,
-      noItemsFoundBuilder,
-      showRetry: true,
-      @required itemBuilder,
-      errorBuilder})
+      bool addSemanticIndexes = true,
+      bool addAutomaticKeepAlives: true,
+      bool addRepaintBoundaries: true,
+      SemanticIndexCallback semanticIndexCallback = _kDefaultSemanticIndexCallback,
+      int semanticIndexOffset = 0,
+      @required double maxCrossAxisExtent,
+      double childAspectRatio = 1.0,
+      double crossAxisSpacing = 0.0,
+      double mainAxisSpacing = 0.0,
+      PagewiseLoadController pageLoadController,
+      int pageSize,
+      PageFuture pageFuture,
+      LoadingBuilder loadingBuilder,
+      RetryBuilder retryBuilder,
+      NoItemsFoundBuilder noItemsFoundBuilder,
+      bool showRetry: true,
+      @required ItemBuilder itemBuilder,
+      ErrorBuilder errorBuilder})
       : super(
             pageSize: pageSize,
             pageFuture: pageFuture,
-            controller: pageLoadController,
+            pageLoadController: pageLoadController,
             key: key,
             loadingBuilder: loadingBuilder,
             noItemsFoundBuilder: noItemsFoundBuilder,

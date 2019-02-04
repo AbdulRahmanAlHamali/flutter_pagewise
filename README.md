@@ -136,7 +136,8 @@ the widget.
 
 A possible use case of the controller is to force a reset of the loaded
 pages using a [RefreshIndicator](https://docs.flutter.io/flutter/material/RefreshIndicator-class.html).
-you could achieve that as follows:
+you could achieve that as follows (note that we added the `Future.value({})` as a dummy return value, because
+`onRefresh` expects a `Future`, but `reset` does not return one):
 
 ```dart
 final _pageLoadController = PagewiseLoadController(
@@ -148,7 +149,8 @@ final _pageLoadController = PagewiseLoadController(
 Widget build(BuildContext context) {
   return RefreshIndicator(
     onRefresh: () async {
-      await this._pageLoadController.reset();
+      this._pageLoadController.reset();
+      await Future.value({});
     },
     child: PagewiseListView(
         itemBuilder: this._itemBuilder,
