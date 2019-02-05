@@ -400,6 +400,7 @@ class PagewiseLoadController<T> extends ChangeNotifier {
   int _numberOfLoadedPages;
   bool _hasMoreItems;
   Object _error;
+  bool _isFetching;
 
   /// Called whenever a new page (or batch) is to be fetched
   ///
@@ -444,39 +445,47 @@ class PagewiseLoadController<T> extends ChangeNotifier {
     this._numberOfLoadedPages = 0;
     this._hasMoreItems = true;
     this._error = null;
+    this._isFetching = false;
     this.notifyListeners();
   }
 
   /// Fetches a new page by calling [pageFuture]
   Future<void> fetchNewPage() async {
-    List<T> page;
-    try {
-      page = await this.pageFuture(this._numberOfLoadedPages);
-      this._numberOfLoadedPages++;
-    } catch (error) {
-      this._error = error;
-      this.notifyListeners();
-      return;
-    }
+    if (!this._isFetching) {
+      this._isFetching = true;
 
-    if (page.length > this.pageSize) {
-      throw ('Page length (${page.length}) is greater than the maximum size (${this.pageSize})');
-    }
+      List<T> page;
+      try {
+        page = await this.pageFuture(this._numberOfLoadedPages);
+        this._numberOfLoadedPages++;
+      } catch (error) {
+        this._error = error;
+        this._isFetching = false;
+        this.notifyListeners();
+        return;
+      }
 
-    if (page.length > 0 && page.length < this.pageSize) {
-      // This should only happen when loading the last page.
-      // In that case, we append the last page with a few items to make its size
-      // similar to normal pages. This is useful especially with GridView,
-      // because we want the loading to show on a new line on its own
-      this._appendedItems = List.generate(this.pageSize - page.length, (_) => {});
-    }
+      if (page.length > this.pageSize) {
+        this._isFetching = false;
+        throw ('Page length (${page.length}) is greater than the maximum size (${this.pageSize})');
+      }
 
-    if (page.length == 0) {
-      this._hasMoreItems = false;
-    } else {
-      this._loadedItems.addAll(page);
+      if (page.length > 0 && page.length < this.pageSize) {
+        // This should only happen when loading the last page.
+        // In that case, we append the last page with a few items to make its size
+        // similar to normal pages. This is useful especially with GridView,
+        // because we want the loading to show on a new line on its own
+        this._appendedItems = List.generate(this.pageSize - page.length, (_) => {});
+      }
+
+      if (page.length == 0) {
+        this._hasMoreItems = false;
+      } else {
+        this._loadedItems.addAll(page);
+      }
+      this._isFetching = false;
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   /// Attempts to retry in case an error occurred
