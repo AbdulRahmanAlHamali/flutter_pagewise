@@ -62,7 +62,7 @@ class PagewiseGridViewExample extends StatelessWidget {
     );
   }
 
-  Widget _itemBuilder(context, entry, _) {
+  Widget _itemBuilder(context, ImageModel entry, _) {
     return Container(
         decoration: BoxDecoration(
           border: Border.all(color: Colors.grey[600]),
@@ -76,7 +76,7 @@ class PagewiseGridViewExample extends StatelessWidget {
                   decoration: BoxDecoration(
                       color: Colors.grey[200],
                       image: DecorationImage(
-                          image: NetworkImage(entry['thumbnailUrl']),
+                          image: NetworkImage(entry.thumbnailUrl),
                           fit: BoxFit.fill)),
                 ),
               ),
@@ -87,14 +87,14 @@ class PagewiseGridViewExample extends StatelessWidget {
                     child: SizedBox(
                         height: 30.0,
                         child: SingleChildScrollView(
-                            child: Text(entry['title'],
+                            child: Text(entry.title,
                                 style: TextStyle(fontSize: 12.0))))),
               ),
               SizedBox(height: 8.0),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8.0),
                 child: Text(
-                  entry['id'].toString(),
+                  entry.id,
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -115,7 +115,7 @@ class PagewiseListViewExample extends StatelessWidget {
             BackendService.getPosts(pageIndex * PAGE_SIZE, PAGE_SIZE));
   }
 
-  Widget _itemBuilder(context, entry, _) {
+  Widget _itemBuilder(context, PostModel entry, _) {
     return Column(
       children: <Widget>[
         ListTile(
@@ -123,8 +123,8 @@ class PagewiseListViewExample extends StatelessWidget {
             Icons.person,
             color: Colors.brown[200],
           ),
-          title: Text(entry['title']),
-          subtitle: Text(entry['body']),
+          title: Text(entry.title),
+          subtitle: Text(entry.body),
         ),
         Divider()
       ],
@@ -151,7 +151,7 @@ class PagewiseSliverListExample extends StatelessWidget {
     ]);
   }
 
-  Widget _itemBuilder(context, entry, _) {
+  Widget _itemBuilder(context, PostModel entry, _) {
     return Column(
       children: <Widget>[
         ListTile(
@@ -159,8 +159,8 @@ class PagewiseSliverListExample extends StatelessWidget {
             Icons.person,
             color: Colors.brown[200],
           ),
-          title: Text(entry['title']),
-          subtitle: Text(entry['body']),
+          title: Text(entry.title),
+          subtitle: Text(entry.body),
         ),
         Divider()
       ],
@@ -197,7 +197,7 @@ class PagewiseSliverGridExample extends StatelessWidget {
     );
   }
 
-  Widget _itemBuilder(context, entry, _) {
+  Widget _itemBuilder(context, ImageModel entry, _) {
     return Container(
         decoration: BoxDecoration(
           border: Border.all(color: Colors.grey[600]),
@@ -211,7 +211,7 @@ class PagewiseSliverGridExample extends StatelessWidget {
                   decoration: BoxDecoration(
                       color: Colors.grey[200],
                       image: DecorationImage(
-                          image: NetworkImage(entry['thumbnailUrl']),
+                          image: NetworkImage(entry.thumbnailUrl),
                           fit: BoxFit.fill)),
                 ),
               ),
@@ -222,14 +222,14 @@ class PagewiseSliverGridExample extends StatelessWidget {
                     child: SizedBox(
                         height: 30.0,
                         child: SingleChildScrollView(
-                            child: Text(entry['title'],
+                            child: Text(entry.title,
                                 style: TextStyle(fontSize: 12.0))))),
               ),
               SizedBox(height: 8.0),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8.0),
                 child: Text(
-                  entry['id'].toString(),
+                  entry.id,
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -239,21 +239,51 @@ class PagewiseSliverGridExample extends StatelessWidget {
 }
 
 class BackendService {
-  static Future<List> getPosts(offset, limit) async {
+  static Future<List<PostModel>> getPosts(offset, limit) async {
     final responseBody = (await http.get(
             'http://jsonplaceholder.typicode.com/posts?_start=$offset&_limit=$limit'))
         .body;
 
-    // The response body is an array of items.
-    return json.decode(responseBody);
+    // The response body is an array of items
+    return PostModel.fromJsonList(json.decode(responseBody));
   }
 
-  static Future<List> getImages(offset, limit) async {
+  static Future<List<ImageModel>> getImages(offset, limit) async {
     final responseBody = (await http.get(
             'http://jsonplaceholder.typicode.com/photos?_start=$offset&_limit=$limit'))
         .body;
 
     // The response body is an array of items.
-    return json.decode(responseBody);
+    return ImageModel.fromJsonList(json.decode(responseBody));
+  }
+}
+
+class PostModel {
+  String title;
+  String body;
+
+  PostModel.fromJson(obj) {
+    this.title = obj['title'];
+    this.body = obj['body'];
+  }
+
+  static List<PostModel> fromJsonList(jsonList) {
+    return jsonList.map<PostModel>((obj) => PostModel.fromJson(obj)).toList();
+  }
+}
+
+class ImageModel {
+  String title;
+  String id;
+  String thumbnailUrl;
+
+  ImageModel.fromJson(obj) {
+    this.title = obj['title'];
+    this.id = obj['id'].toString();
+    this.thumbnailUrl = obj['thumbnailUrl'];
+  }
+
+  static List<ImageModel> fromJsonList(jsonList) {
+    return jsonList.map<ImageModel>((obj) => ImageModel.fromJson(obj)).toList();
   }
 }
