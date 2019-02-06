@@ -1,4 +1,10 @@
-# 1.2.0 - 19/12/2018
+# 1.2.1 - 06/02/2019
+* Fixes the `GridView` exception in case the number of items in the last page is less than page size (issues #35, #33)
+* Fixes the race condition that might cause the same page to be fetched multiple times (Issues #6, #30)
+* Improves types, generic types, and default values on parameters (Issues #24, #25, #32) 
+* Implements fixes and improvements to the README and the example
+
+## 1.2.0 - 19/12/2018
 * Add scenario of moving from one widget.controller to another in didUpdateWidget
 * Implement noItemsFoundBuilder
 
