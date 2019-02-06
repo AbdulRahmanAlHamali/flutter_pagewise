@@ -1,4 +1,4 @@
-A library for widgets that load their content one page (or batch) at a time (also known as lazy-loading).
+A library for widgets that load their content one page (or batch) at a time (also known as lazy-loading and pagination).
 
 ![flutter_pagewise](flutter_pagewise.gif)
 
