@@ -1,3 +1,6 @@
+## 1.2.3 - 20/02/2019
+* Fix SDK dependency
+
 ## 1.2.2 - 06/02/2019
 * Fix environment in pubspec.yaml to remove health complaint on dart website
 
