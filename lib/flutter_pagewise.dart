@@ -477,7 +477,7 @@ class PagewiseLoadController<T> extends ChangeNotifier {
 
       if (length > this.pageSize) {
         this._isFetching = false;
-        throw ('Page length (${page.length}) is greater than the maximum size (${this.pageSize})');
+        throw ('Page length ($length) is greater than the maximum size (${this.pageSize})');
       }
 
       if (length > 0 && length < this.pageSize) {
