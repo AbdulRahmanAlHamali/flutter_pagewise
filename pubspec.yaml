@@ -1,7 +1,6 @@
 name: flutter_pagewise
 description: A library for widgets that load their content one page (or batch) at a time.
 version: 2.0.0
-author: AbdulRahman AlHamali <a.alhamali93@gmail.com>
 homepage: https://github.com/AbdulRahmanAlHamali/flutter_pagewise
 
 environment:
@@ -11,7 +10,6 @@ dependencies:
   flutter:
     sdk: flutter
   async: ^2.0.8
-
 
 dev_dependencies:
   flutter_test:
