@@ -241,7 +241,7 @@ class PagewiseSliverGridExample extends StatelessWidget {
 class BackendService {
   static Future<List<PostModel>> getPosts(offset, limit) async {
     final responseBody = (await http.get(
-            'http://jsonplaceholder.typicode.com/posts?_start=$offset&_limit=$limit'))
+            Uri.parse('http://jsonplaceholder.typicode.com/posts?_start=$offset&_limit=$limit')))
         .body;
 
     // The response body is an array of items
@@ -250,7 +250,7 @@ class BackendService {
 
   static Future<List<ImageModel>> getImages(offset, limit) async {
     final responseBody = (await http.get(
-            'http://jsonplaceholder.typicode.com/photos?_start=$offset&_limit=$limit'))
+            Uri.parse('http://jsonplaceholder.typicode.com/photos?_start=$offset&_limit=$limit')))
         .body;
 
     // The response body is an array of items.
