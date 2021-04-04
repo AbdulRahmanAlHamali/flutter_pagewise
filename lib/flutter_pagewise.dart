@@ -243,7 +243,7 @@ class PagewiseState<T> extends State<Pagewise<T>> {
     return widget.builder(this);
   }
 
-  Widget? _itemBuilder(BuildContext context, int index) {
+  Widget _itemBuilder(BuildContext context, int index) {
     // The total number of widgets, is the number of loaded items, plus the
     // number of items that we appended to make all pages the same size,
     // plus 1 for the loader
@@ -251,7 +251,7 @@ class PagewiseState<T> extends State<Pagewise<T>> {
         this._effectiveController!._appendedItems.length +
         1;
 
-    if (index >= total) return null;
+    if (index >= total) return SizedBox.shrink();
 
     if (index == total - 1) {
       if (this._effectiveController!.noItemsFound) {
@@ -461,7 +461,7 @@ class PagewiseLoadController<T> extends ChangeNotifier {
     if (!this._isFetching) {
       this._isFetching = true;
 
-      List<T>? page;
+      List<T> page;
       try {
         page = await this.pageFuture!(this._numberOfLoadedPages);
         this._numberOfLoadedPages++;
@@ -473,7 +473,7 @@ class PagewiseLoadController<T> extends ChangeNotifier {
       }
 
       // Get length accounting for possible null Future return. We'l treat a null Future as an empty return
-      final int length = (page?.length ?? 0);
+      final int length = (page.length);
 
       if (length > this.pageSize!) {
         this._isFetching = false;
@@ -561,7 +561,7 @@ class PagewiseListView<T> extends Pagewise<T> {
                   primary: primary,
                   controller: controller,
                   itemCount: state._itemCount,
-                  itemBuilder: state._itemBuilder as Widget Function(BuildContext, int));
+                  itemBuilder: state._itemBuilder);
             });
 }
 
@@ -630,7 +630,7 @@ class PagewiseGridView<T> extends Pagewise<T> {
                           mainAxisSpacing: mainAxisSpacing,
                           itemCount: state._itemCount),
                   itemCount: state._itemCount,
-                  itemBuilder: state._itemBuilder as Widget Function(BuildContext, int));
+                  itemBuilder: state._itemBuilder);
             });
 
   /// Creates a Pagewise GridView with a maxCrossAxisExtent.
@@ -697,7 +697,7 @@ class PagewiseGridView<T> extends Pagewise<T> {
                           mainAxisSpacing: mainAxisSpacing,
                           itemCount: state._itemCount),
                   itemCount: state._itemCount,
-                  itemBuilder: state._itemBuilder as Widget Function(BuildContext, int));
+                  itemBuilder: state._itemBuilder);
             });
 }
 
