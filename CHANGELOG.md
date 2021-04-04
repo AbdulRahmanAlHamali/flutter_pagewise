@@ -1,3 +1,7 @@
+## 2.0.1 - 04-May-2021
+
+- PR#100 - Various tweaks to the null-safety code and Android fixes
+
 ## 2.0.0 - 02/04/2021
 
 - Null Safety
