@@ -1,3 +1,6 @@
+## 2.0.2 - 17-September-2022
+-- PR#109 - Use TextButton instead of FlatButton
+
 ## 2.0.1 - 04-May-2021
 
 - PR#100 - Various tweaks to the null-safety code and Android fixes
