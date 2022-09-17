@@ -505,6 +505,11 @@ class PagewiseLoadController<T> extends ChangeNotifier {
     this._error = null;
     this.notifyListeners();
   }
+
+  void removeItem(bool Function(T item) test) {
+    this._loadedItems.removeWhere(test);
+    this.notifyListeners();
+  }
 }
 
 class PagewiseListView<T> extends Pagewise<T> {
