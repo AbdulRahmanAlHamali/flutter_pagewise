@@ -1,3 +1,6 @@
+## 2.0.3 - 17-September-2022
+-- PR#64 Add possibility to remove items from loaded items list
+
 ## 2.0.2 - 17-September-2022
 -- PR#109 - Use TextButton instead of FlatButton
 
