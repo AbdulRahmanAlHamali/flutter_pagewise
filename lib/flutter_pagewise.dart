@@ -162,8 +162,7 @@ abstract class Pagewise<T> extends StatefulWidget {
       required this.itemBuilder,
       this.errorBuilder,
       required this.builder})
-      : assert(showRetry != null),
-        assert((pageLoadController == null &&
+      : assert((pageLoadController == null &&
                 pageSize != null &&
                 pageFuture != null) ||
             (pageLoadController != null &&
