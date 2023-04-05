@@ -37,6 +37,14 @@ abstract class Pagewise<T> extends StatefulWidget {
   /// or less entries (in the case of the last page) for each page.
   final PageFuture<T>? pageFuture;
 
+  /// Whether the number of items per page cannot be greater than the page size.
+  /// It can happen when loaded data are somehow modified (extended) before
+  /// displaying (eg. adding header items).
+  /// When set to false (default), number of items cannot exceed the page size and an exception
+  /// will be thrown.
+  /// When set to true, number of items can exceed the page size and no exception will be thrown.
+  final bool itemsCanExceedPageSize;
+
   /// Called when loading each page.
   ///
   /// It is expected to return a widget to display while the page is loading.
@@ -161,7 +169,8 @@ abstract class Pagewise<T> extends StatefulWidget {
       this.showRetry: true,
       required this.itemBuilder,
       this.errorBuilder,
-      required this.builder})
+      required this.builder,
+      this.itemsCanExceedPageSize = false})
       : assert((pageLoadController == null &&
                 pageSize != null &&
                 pageFuture != null) ||
@@ -192,7 +201,10 @@ class PagewiseState<T> extends State<Pagewise<T>> {
 
     if (widget.pageLoadController == null) {
       this._controller = PagewiseLoadController<T>(
-          pageFuture: widget.pageFuture, pageSize: widget.pageSize);
+        pageFuture: widget.pageFuture, 
+        pageSize: widget.pageSize, 
+        itemsCanExceedPageSize: widget.itemsCanExceedPageSize,
+      );
     }
 
     this._effectiveController!.init();
@@ -218,7 +230,8 @@ class PagewiseState<T> extends State<Pagewise<T>> {
       oldWidget.pageLoadController!.removeListener(this._controllerListener);
       this._controller = PagewiseLoadController<T>(
           pageFuture: oldWidget.pageLoadController!.pageFuture,
-          pageSize: oldWidget.pageLoadController!.pageSize);
+          pageSize: oldWidget.pageLoadController!.pageSize,
+          itemsCanExceedPageSize: oldWidget.pageLoadController!.itemsCanExceedPageSize);
       this._effectiveController!.addListener(this._controllerListener);
       this._effectiveController!.init();
     } else if (widget.pageLoadController != null &&
@@ -420,10 +433,18 @@ class PagewiseLoadController<T> extends ChangeNotifier {
   /// The number  of entries per page
   final int? pageSize;
 
+  /// Whether the number of items per page cannot be greater than the page size.
+  /// It can happen when loaded data are somehow modified (extended) before
+  /// displaying (eg. adding header items).
+  /// When set to false (default), number of items cannot exceed the page size and an exception
+  /// will be thrown.
+  /// When set to true, number of items can exceed the page size and no exception will be thrown.
+  final bool itemsCanExceedPageSize;
+
   /// Creates a PagewiseLoadController.
   ///
   /// You must provide both the [pageFuture] and the [pageSize]
-  PagewiseLoadController({required this.pageFuture, required this.pageSize});
+  PagewiseLoadController({required this.pageFuture, required this.pageSize, this.itemsCanExceedPageSize = false});
 
   /// The list of items that have already been loaded
   List<T>? get loadedItems => this._loadedItems;
@@ -476,9 +497,9 @@ class PagewiseLoadController<T> extends ChangeNotifier {
       // Get length accounting for possible null Future return. We'l treat a null Future as an empty return
       final int length = (page.length);
 
-      if (length > this.pageSize!) {
+      if (!itemsCanExceedPageSize && length > pageSize!) {
         this._isFetching = false;
-        throw ('Page length ($length) is greater than the maximum size (${this.pageSize})');
+        throw ('Page length ($length) is greater than the maximum size ($pageSize)');
       }
 
       if (length > 0 && length < this.pageSize!) {
@@ -534,6 +555,7 @@ class PagewiseListView<T> extends Pagewise<T> {
       bool reverse: false,
       int? pageSize,
       PageFuture<T>? pageFuture,
+        bool itemsCanExceedPageSize = false,
       LoadingBuilder? loadingBuilder,
       RetryBuilder? retryBuilder,
       NoItemsFoundBuilder? noItemsFoundBuilder,
@@ -544,6 +566,7 @@ class PagewiseListView<T> extends Pagewise<T> {
             pageSize: pageSize,
             pageFuture: pageFuture,
             pageLoadController: pageLoadController,
+            itemsCanExceedPageSize: itemsCanExceedPageSize,
             key: key,
             loadingBuilder: loadingBuilder,
             retryBuilder: retryBuilder,
@@ -597,6 +620,7 @@ class PagewiseGridView<T> extends Pagewise<T> {
       bool reverse: false,
       int? pageSize,
       PageFuture<T>? pageFuture,
+      bool itemsCanExceedPageSize = false,
       LoadingBuilder? loadingBuilder,
       RetryBuilder? retryBuilder,
       NoItemsFoundBuilder? noItemsFoundBuilder,
@@ -607,6 +631,7 @@ class PagewiseGridView<T> extends Pagewise<T> {
             pageSize: pageSize,
             pageFuture: pageFuture,
             pageLoadController: pageLoadController,
+            itemsCanExceedPageSize: itemsCanExceedPageSize,
             key: key,
             loadingBuilder: loadingBuilder,
             retryBuilder: retryBuilder,
@@ -664,6 +689,7 @@ class PagewiseGridView<T> extends Pagewise<T> {
       bool reverse: false,
       int? pageSize,
       PageFuture<T>? pageFuture,
+      bool itemsCanExceedPageSize = false,
       LoadingBuilder? loadingBuilder,
       RetryBuilder? retryBuilder,
       NoItemsFoundBuilder? noItemsFoundBuilder,
@@ -674,6 +700,7 @@ class PagewiseGridView<T> extends Pagewise<T> {
             pageSize: pageSize,
             pageFuture: pageFuture,
             pageLoadController: pageLoadController,
+            itemsCanExceedPageSize: itemsCanExceedPageSize,
             key: key,
             loadingBuilder: loadingBuilder,
             retryBuilder: retryBuilder,
@@ -725,6 +752,7 @@ class PagewiseSliverList<T> extends Pagewise<T> {
       PagewiseLoadController<T>? pageLoadController,
       int? pageSize,
       PageFuture<T>? pageFuture,
+      bool itemsCanExceedPageSize = false,
       LoadingBuilder? loadingBuilder,
       RetryBuilder? retryBuilder,
       NoItemsFoundBuilder? noItemsFoundBuilder,
@@ -735,6 +763,7 @@ class PagewiseSliverList<T> extends Pagewise<T> {
             pageSize: pageSize,
             pageFuture: pageFuture,
             pageLoadController: pageLoadController,
+            itemsCanExceedPageSize: itemsCanExceedPageSize,
             key: key,
             loadingBuilder: loadingBuilder,
             retryBuilder: retryBuilder,
@@ -775,6 +804,7 @@ class PagewiseSliverGrid<T> extends Pagewise<T> {
       PagewiseLoadController<T>? pageLoadController,
       int? pageSize,
       PageFuture<T>? pageFuture,
+      bool itemsCanExceedPageSize = false,
       LoadingBuilder? loadingBuilder,
       RetryBuilder? retryBuilder,
       NoItemsFoundBuilder? noItemsFoundBuilder,
@@ -785,6 +815,7 @@ class PagewiseSliverGrid<T> extends Pagewise<T> {
             pageSize: pageSize,
             pageFuture: pageFuture,
             pageLoadController: pageLoadController,
+            itemsCanExceedPageSize: itemsCanExceedPageSize,
             key: key,
             loadingBuilder: loadingBuilder,
             retryBuilder: retryBuilder,
@@ -830,6 +861,7 @@ class PagewiseSliverGrid<T> extends Pagewise<T> {
       PagewiseLoadController<T>? pageLoadController,
       int? pageSize,
       PageFuture<T>? pageFuture,
+      bool itemsCanExceedPageSize = false,
       LoadingBuilder? loadingBuilder,
       RetryBuilder? retryBuilder,
       NoItemsFoundBuilder? noItemsFoundBuilder,
@@ -840,6 +872,7 @@ class PagewiseSliverGrid<T> extends Pagewise<T> {
             pageSize: pageSize,
             pageFuture: pageFuture,
             pageLoadController: pageLoadController,
+            itemsCanExceedPageSize: itemsCanExceedPageSize,
             key: key,
             loadingBuilder: loadingBuilder,
             noItemsFoundBuilder: noItemsFoundBuilder,
