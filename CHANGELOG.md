@@ -1,3 +1,6 @@
+## 2.0.4 - 08-October-2022
+-- PR#115 Add null safety check to removeItem
+
 ## 2.0.3 - 17-September-2022
 -- PR#64 Add possibility to remove items from loaded items list
 
